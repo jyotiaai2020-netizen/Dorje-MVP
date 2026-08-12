@@ -4,6 +4,8 @@ import { interpretCommand } from "@/functions/interpretCommand";
 import { createDocument } from "@/functions/createDocument";
 import { editDocument } from "@/functions/editDocument";
 import { sendWorkspaceEmail } from "@/functions/sendWorkspaceEmail";
+import { analyzeAttachment } from "@/functions/analyzeAttachment";
+import { extractDocumentText } from "@/services/workspaceAttachment";
 import OfficeEditor from "@/components/OfficeEditor";
 import CloudBrowser from "@/components/CloudBrowser";
 import {
@@ -149,12 +151,12 @@ export default function WorkspaceAssistant() {
     if (!file) return;
     setUploading(true);
     try {
-      const res = await base44.integrations.Core.UploadFile({ file });
-      const file_url = res?.file_url || res?.data?.file_url;
-      if (!file_url) throw new Error("no file url returned");
-      setAttachment({ name: file.name, file_url });
+      const extracted = await extractDocumentText(file);
+      setAttachment({ name: extracted.name, extractedText: extracted.text, contentType: extracted.type });
+      addMsg("dorje", `Extracted text from "${extracted.name}" locally (${extracted.text.length.toLocaleString()} characters). The raw document remains in this browser. Ask me to review it when ready.`);
     } catch (err) {
-      addMsg("dorje", "Upload failed: " + (err?.message || "unknown error"));
+      setAttachment(null);
+      addMsg("dorje", "Attachment failed: " + (err?.message || "the selected document could not be read locally"));
     } finally {
       setUploading(false);
       if (e.target) e.target.value = "";
@@ -169,7 +171,12 @@ export default function WorkspaceAssistant() {
     addMsg("user", `${instruction || "Attached a file"} — ${attachment.name}`);
     setBusy(true);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({ prompt, file_urls: [attachment.file_url] });
+      const res = await analyzeAttachment({
+        filename: attachment.name,
+        instruction: prompt,
+        text_content: attachment.extractedText,
+        content_type: attachment.contentType,
+      });
       const text = typeof res === "string" ? res : res?.data?.response || res?.response || "I couldn't read that file.";
       addMsg("dorje", text);
     } catch (e) {
