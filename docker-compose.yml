@@ -1,0 +1,69 @@
+x-backend-env: &backend-env
+  APP_ENV: production
+  APP_DEBUG: "false"
+  EDITION_ID: student
+  WORKSPACE_NAME: DorjeAI Student Edition
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required for production containers}
+  TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  OLLAMA_BASE_URL: http://host.docker.internal:11434
+  DATABASE_MODE: ${DATABASE_MODE:-local}
+  DATABASE_URL: ${DATABASE_URL:-sqlite:////runtime/database/lotus.db}
+  DATABASE_MIGRATION_URL: ${DATABASE_MIGRATION_URL:-}
+  DATABASE_SSL_MODE: ${DATABASE_SSL_MODE:-require}
+  DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+  DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+  DB_POOL_TIMEOUT_SECONDS: ${DB_POOL_TIMEOUT_SECONDS:-30}
+  DB_POOL_RECYCLE_SECONDS: ${DB_POOL_RECYCLE_SECONDS:-1800}
+  DB_CONNECT_TIMEOUT_SECONDS: ${DB_CONNECT_TIMEOUT_SECONDS:-10}
+  SUPABASE_PROJECT_REF: ${SUPABASE_PROJECT_REF:-}
+  SUPABASE_DB_HOST: ${SUPABASE_DB_HOST:-}
+  SUPABASE_DB_PORT: ${SUPABASE_DB_PORT:-5432}
+  SUPABASE_DB_NAME: ${SUPABASE_DB_NAME:-postgres}
+  SUPABASE_DB_USER: ${SUPABASE_DB_USER:-}
+  SUPABASE_DB_PASSWORD: ${SUPABASE_DB_PASSWORD:-}
+  DATABASE_REQUIRE_SSL: ${DATABASE_REQUIRE_SSL:-true}
+  DATABASE_REQUIRE_MIGRATIONS: ${DATABASE_REQUIRE_MIGRATIONS:-true}
+  RUNTIME_ROOT: /runtime
+  FRONTEND_URL: http://localhost:3100
+  APP_URL: http://localhost:3100
+  GOOGLE_REDIRECT_URI: http://localhost:3100/api/oauth/google/callback
+
+services:
+  student-backend:
+    build: ./packages/platform/backend
+    environment:
+      <<: *backend-env
+    volumes:
+      - student_runtime:/runtime
+    ports:
+      - "8100:8000"
+
+  student-frontend:
+    build:
+      context: ./packages/platform/frontend
+      args:
+        NEXT_PUBLIC_APP_TITLE: DorjeAI Student Edition
+        NEXT_PUBLIC_API_URL: http://localhost:8100
+    environment:
+      NEXT_PUBLIC_APP_TITLE: DorjeAI Student Edition
+      NEXT_PUBLIC_API_URL: http://localhost:8100
+    ports:
+      - "3101:3000"
+    depends_on:
+      - student-backend
+
+  dorjeflow-experience:
+    build:
+      context: ./experience/dorjeflow
+      args:
+        VITE_RUNTIME_PROVIDER: student-lad
+        VITE_STUDENT_LAD_API_URL: http://localhost:8100/api/v1
+    ports:
+      - "3100:80"
+    depends_on:
+      - student-backend
+
+volumes:
+  student_runtime:

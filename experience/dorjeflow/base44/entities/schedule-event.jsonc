@@ -1,0 +1,70 @@
+{
+  "name": "ScheduleEvent",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "starts_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ends_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed",
+        "confirmed",
+        "cancelled"
+      ],
+      "default": "proposed"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "area_id": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "external_id": {
+      "type": "string"
+    },
+    "conflict_state": {
+      "type": "string"
+    },
+    "sync_state": {
+      "type": "string",
+      "enum": [
+        "local",
+        "queued",
+        "synced",
+        "conflicted"
+      ],
+      "default": "local"
+    },
+    "idempotency_key": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "starts_at",
+    "ends_at"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

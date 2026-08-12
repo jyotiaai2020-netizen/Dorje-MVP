@@ -1,0 +1,70 @@
+{
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "user_reengagement",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "find_inactive": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "findInactiveUsers"
+          },
+          "then": "wait_week",
+          "x-base44": {
+            "title": "Find inactive users",
+            "description": "30 days no activity \u2192 we miss you email"
+          }
+        }
+      },
+      {
+        "wait_week": {
+          "wait": "P7D",
+          "then": "check_reengagement",
+          "x-base44": {
+            "title": "Wait one week",
+            "description": "Give users time to return"
+          }
+        }
+      },
+      {
+        "check_reengagement": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "checkReengagement",
+            "args": {
+              "users": "${ .find_inactive.users }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Check re-engagement",
+            "description": "If active in the week, offer help"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 9 * * *",
+      "one_time_date": null,
+      "timezone": "America/New_York",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "name": "User Re-engagement",
+  "description": "Daily: finds users with no audit event or document update in 30 days and sends a 'we miss you' email, waits one week, and if the user re-engaged sends a follow-up asking if they need help with a specific area."
+}

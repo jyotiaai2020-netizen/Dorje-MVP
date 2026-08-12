@@ -1,0 +1,41 @@
+{
+  "name": "Sync Areas to Calendar",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sync_areas_to_calendar",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sync_area": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "syncToSchedule",
+            "args": {
+              "source_type": "area",
+              "source_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Sync area tasks to calendar",
+            "description": "Re-sync all tasks in the updated area to the calendar"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "area",
+      "events": [
+        "update"
+      ]
+    },
+    "condition": null
+  },
+  "description": "When an area is updated, re-sync all of its tasks (with due dates) to the calendar so the area's schedule stays current."
+}

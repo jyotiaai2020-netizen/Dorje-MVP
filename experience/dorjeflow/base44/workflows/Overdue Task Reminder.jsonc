@@ -1,0 +1,44 @@
+{
+  "name": "Overdue Task Reminder",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "overdue_task_reminder",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process_overdue": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "processOverdueTasks"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Process overdue tasks",
+            "description": "Remind owners of overdue tasks; escalate to manager after 3 days"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 8 * * *",
+      "one_time_date": null,
+      "timezone": "America/New_York",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Every morning at 8am ET, sends a reminder to the owner of each task whose due date has passed and is not complete. If a task remains incomplete for 3 more days, escalates it to the user's manager and raises the task priority to Critical."
+}

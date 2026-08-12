@@ -1,0 +1,18 @@
+{
+  "name": "student-lad",
+  "private": true,
+  "scripts": {
+    "experience:dev": "npm --prefix experience/dorjeflow run dev",
+    "experience:lint": "npm --prefix experience/dorjeflow run lint",
+    "experience:typecheck": "npm --prefix experience/dorjeflow run typecheck",
+    "experience:build": "npm --prefix experience/dorjeflow run build",
+    "experience:test": "npm --prefix experience/dorjeflow run test:runtime",
+    "mvp:check": "npm run experience:test && npm run experience:lint && npm run experience:build",
+    "frontend:lint": "npm --prefix packages/platform/frontend run lint",
+    "frontend:build": "npm --prefix packages/platform/frontend run build",
+    "test:python": "cd packages/platform/backend && ./.venv/bin/python -m unittest discover -s tests -v",
+    "test:e2e": "npm --prefix packages/platform/frontend run test:e2e",
+    "test:ports": "node scripts/check-dev-ports.mjs",
+    "test:all": "npm run test:python && npm run frontend:lint && npm run frontend:build && npm run mvp:check && npm run test:ports && npm run test:e2e"
+  }
+}

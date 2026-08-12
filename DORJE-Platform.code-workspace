@@ -1,0 +1,50 @@
+{
+  "folders": [
+    {
+      "name": "DORJE-Platform",
+      "path": "."
+    },
+    {
+      "name": "Student Backend Tests",
+      "path": "packages/platform/backend"
+    },
+    {
+      "name": "Student Frontend Tests",
+      "path": "packages/platform/frontend"
+    },
+    {
+      "name": "DorjeFlow Experience",
+      "path": "experience/dorjeflow"
+    }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:Student Backend Tests}/.venv/bin/python",
+    "python.testing.cwd": "${workspaceFolder:Student Backend Tests}",
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestArgs": [
+      "tests",
+      "-v"
+    ],
+    "python.analysis.extraPaths": [
+      "${workspaceFolder:Student Backend Tests}"
+    ],
+    "python.terminal.activateEnvironment": true,
+    "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    "python.testing.autoTestDiscoverOnSavePattern": "**/test_*.py",
+    "playwright.reuseBrowser": false,
+    "playwright.showTrace": false,
+    "playwright.updateSnapshots": "none",
+    "testing.automaticallyOpenPeekView": "failureInVisibleDocument",
+    "testing.automaticallyOpenTestResults": "neverOpen",
+    "testing.followRunningTest": true
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "ms-playwright.playwright",
+      "dbaeumer.vscode-eslint"
+    ]
+  }
+}

@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #f1f5f9;
+  --font-geist-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+[data-theme="light"] {
+  --background: #f7f8f6;
+  --foreground: #17201d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Inter, "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+@media (min-width: 1280px) {
+  .dorje-sidebar { width: var(--dorje-left-width, 280px) !important; }
+  .dorje-chat-grid { grid-template-columns: minmax(0, 1fr) var(--dorje-right-width, 288px); transition: grid-template-columns 200ms ease; }
+  .dorje-context-panel { width: var(--dorje-right-width, 288px); }
+}
+
+.panel-resizer {
+  position: absolute;
+  z-index: 50;
+  top: 0;
+  height: 100%;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+}
+.panel-resizer::after { content: ""; position: absolute; inset-block: 0; left: 4px; width: 2px; background: transparent; transition: background 150ms ease; }
+.panel-resizer:hover::after, .panel-resizer:focus-visible::after, .panel-resizer:active::after { background: #34d399; }
+.panel-resizer-right { right: -5px; }
+.panel-resizer-left { left: -5px; }
+
+.kamal-safe-composer { padding-right: 6rem !important; }
+@media (max-width: 639px) {
+  .kamal-safe-composer { padding-right: 0.75rem !important; padding-bottom: 5.75rem !important; }
+}
+
+.dorje-workspace {
+  background: radial-gradient(circle at 15% 0%, rgb(16 185 129 / 0.1), transparent 28%), #020617;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+[data-theme="light"] .dorje-workspace { background: radial-gradient(circle at 15% 0%, rgb(16 185 129 / 0.09), transparent 28%), #f3f5f2; color: #17201d; }
+[data-theme="light"] .dorje-surface, [data-theme="light"] .dorje-sidebar, [data-theme="light"] .dorje-chat, [data-theme="light"] .dorje-context, [data-theme="light"] .dorje-content-panel { background-color: rgb(255 255 255 / 0.92) !important; border-color: #dfe5e1 !important; }
+[data-theme="light"] .dorje-topbar, [data-theme="light"] .dorje-composer { background-color: rgb(250 251 249 / 0.96) !important; border-color: #dfe5e1 !important; }
+[data-theme="light"] .dorje-card, [data-theme="light"] .dorje-message-card { background-color: #fff !important; border-color: #e2e7e4 !important; box-shadow: 0 8px 24px rgb(21 48 39 / 0.05); }
+[data-theme="light"] .dorje-workspace .text-white, [data-theme="light"] .dorje-workspace h1, [data-theme="light"] .dorje-workspace h2, [data-theme="light"] .dorje-workspace h3 { color: #17201d !important; }
+[data-theme="light"] .dorje-workspace .text-slate-100, [data-theme="light"] .dorje-workspace .text-slate-200, [data-theme="light"] .dorje-workspace .text-slate-300 { color: #34443e !important; }
+[data-theme="light"] .dorje-workspace .text-slate-400, [data-theme="light"] .dorje-workspace .text-slate-500, [data-theme="light"] .dorje-workspace .text-slate-600 { color: #66756f !important; }
+[data-theme="light"] .dorje-workspace .bg-slate-900, [data-theme="light"] .dorje-workspace .bg-slate-950\/60, [data-theme="light"] .dorje-workspace .bg-slate-950\/80 { background-color: #f5f7f5 !important; }
+[data-theme="light"] .dorje-workspace .bg-slate-950, [data-theme="light"] .dorje-workspace .bg-slate-950\/70, [data-theme="light"] .dorje-workspace .bg-slate-950\/90, [data-theme="light"] .dorje-workspace .bg-slate-950\/95, [data-theme="light"] .dorje-workspace .bg-slate-950\/98, [data-theme="light"] .dorje-workspace .bg-slate-900\/50, [data-theme="light"] .dorje-workspace .bg-slate-900\/70, [data-theme="light"] .dorje-workspace .bg-slate-900\/75 { background-color: #f7f9f7 !important; }
+[data-theme="light"] .dorje-workspace .border-slate-600, [data-theme="light"] .dorje-workspace .border-slate-700, [data-theme="light"] .dorje-workspace .border-slate-800 { border-color: #d7dfda !important; }
+[data-theme="light"] .dorje-workspace .text-emerald-50, [data-theme="light"] .dorje-workspace .text-emerald-100, [data-theme="light"] .dorje-workspace .text-emerald-200, [data-theme="light"] .dorje-workspace .text-emerald-300 { color: #066348 !important; }
+[data-theme="light"] .dorje-workspace .text-sky-100, [data-theme="light"] .dorje-workspace .text-sky-200 { color: #075985 !important; }
+[data-theme="light"] .dorje-workspace .text-violet-100, [data-theme="light"] .dorje-workspace .text-violet-200 { color: #5b21b6 !important; }
+[data-theme="light"] .dorje-workspace .text-amber-100, [data-theme="light"] .dorje-workspace .text-amber-200, [data-theme="light"] .dorje-workspace .text-amber-300 { color: #854d0e !important; }
+[data-theme="light"] .dorje-workspace .text-rose-200, [data-theme="light"] .dorje-workspace .text-rose-300 { color: #be123c !important; }
+[data-theme="light"] .dorje-workspace input:not([type="color"]), [data-theme="light"] .dorje-workspace textarea, [data-theme="light"] .dorje-workspace select { background-color: #fff !important; border-color: #ccd7d1 !important; color: #17201d !important; }
+[data-theme="light"] .dorje-workspace input::placeholder, [data-theme="light"] .dorje-workspace textarea::placeholder { color: #718078 !important; opacity: 1; }
+[data-theme="light"] .dorje-workspace select option { background: #fff; color: #17201d; }
+[data-theme="light"] .dorje-workspace .action-menu { background-color: #fff !important; border-color: #ccd7d1 !important; box-shadow: 0 14px 36px rgb(20 44 35 / 0.16); }
+[data-theme="light"] .dorje-workspace .menu-action:hover, [data-theme="light"] .dorje-workspace .composer-tool:hover, [data-theme="light"] .dorje-workspace .output-action:hover, [data-theme="light"] .dorje-workspace .image-tool:hover, [data-theme="light"] .dorje-workspace .sidebar-item:hover { background-color: #eaf0ec !important; color: #17201d !important; }
+[data-theme="light"] .dorje-workspace .sidebar-item-active { background-color: #dfe9e3 !important; color: #104737 !important; }
+[data-theme="light"] .dorje-workspace .dorje-message-card.bg-emerald-500\/10 { background-color: #e8f6ef !important; color: #153d31 !important; }
+[data-theme="light"] .dorje-workspace table { color: #253a32; }
+[data-theme="light"] .dorje-workspace tbody tr:nth-child(odd) { background-color: #f7f9f7 !important; }
+[data-theme="light"] .dorje-workspace code { color: #334155; }
+
+@keyframes dorje-soft-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.04); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+.dorje-thinking {
+  animation: dorje-soft-spin 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px rgb(52 211 153 / 0.24));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dorje-thinking { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded-xl border border-slate-700 bg-slate-950/80 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .action-primary {
+    @apply w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .action-secondary {
+    @apply rounded-xl border border-slate-700 bg-slate-950/60 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-emerald-400/30 hover:text-emerald-200 disabled:cursor-not-allowed disabled:opacity-35;
+  }
+
+  .action-disabled {
+    @apply rounded-xl border border-amber-400/20 bg-amber-400/5 px-3 py-2 text-xs font-semibold text-amber-200 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .security-note {
+    @apply rounded-xl border border-amber-400/15 bg-amber-400/5 p-2.5 text-xs leading-5 text-amber-100/70;
+  }
+
+  .composer-tool {
+    @apply relative inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/40;
+  }
+
+  .composer-tooltip {
+    @apply pointer-events-none absolute bottom-full left-1/2 z-[120] mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-950 px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-xl transition group-hover:opacity-100;
+  }
+
+  .composer-tool:hover .composer-tooltip,
+  .composer-tool:focus-visible .composer-tooltip {
+    @apply opacity-100;
+  }
+
+  .source-option {
+    @apply flex min-h-14 items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-3 py-2 text-left text-xs text-slate-300 transition hover:border-emerald-400/30 hover:bg-slate-800 hover:text-white;
+  }
+
+  .source-option-icon {
+    @apply min-h-11 px-2 py-2;
+  }
+
+  .source-option-icon > svg,
+  .source-option-icon > img,
+  .source-option-icon > span:first-child {
+    @apply shrink-0;
+  }
+
+  .source-tooltip {
+    @apply pointer-events-none absolute bottom-full left-1/2 z-[130] mb-2 min-w-40 -translate-x-1/2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-left opacity-0 shadow-2xl transition group-hover:opacity-100 group-focus-visible:opacity-100;
+  }
+
+  .source-option span {
+    @apply min-w-0;
+  }
+
+  .source-option strong {
+    @apply block truncate text-xs font-semibold;
+  }
+
+  .source-option small {
+    @apply block truncate text-[10px] leading-4 text-slate-500;
+  }
+
+  .icon-control { @apply inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700 text-slate-400 transition hover:border-emerald-400/30 hover:bg-slate-800 hover:text-white; }
+  .sidebar-item { @apply flex min-h-10 items-center justify-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-slate-400 transition hover:bg-slate-900 hover:text-white xl:justify-start; }
+  .sidebar-item-active { @apply bg-slate-800 text-white; }
+  .avatar-chip { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-500/15 text-emerald-200 shadow-sm; }
+  .asset-pill { @apply inline-flex max-w-full items-center gap-1.5 rounded-lg border border-sky-300/15 bg-sky-500/10 px-2.5 py-1 text-xs text-sky-100; }
+  .message-action-bar { @apply mt-3 flex flex-wrap items-center gap-1 border-t border-slate-800 pt-2; }
+  .output-action { @apply inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-slate-400 transition hover:bg-slate-800 hover:text-white disabled:opacity-40; }
+  .image-tool { @apply inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 transition hover:bg-slate-800 hover:text-white; }
+  .action-menu { @apply absolute top-9 z-40 w-48 rounded-xl border border-slate-700 bg-slate-900 p-1 shadow-2xl; }
+  .menu-action { @apply flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-slate-300 transition hover:bg-slate-800; }
+  .suggestion-chip { @apply rounded-full border border-slate-700 px-3 py-1.5 text-[11px] text-slate-400 transition hover:border-emerald-400/30 hover:bg-emerald-500/5 hover:text-emerald-200; }
+  .send-button { @apply inline-flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-35; }
+  .context-empty { @apply mt-2 rounded-xl border border-dashed border-slate-800 p-3 text-xs leading-5 text-slate-600; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.2em] text-emerald-400; }
+}
+
+/* Keep compact Dorje controls readable after Tailwind utility generation. */
+[data-theme="light"] .dorje-workspace .sidebar-item,
+[data-theme="light"] .dorje-workspace .composer-tool,
+[data-theme="light"] .dorje-workspace .output-action,
+[data-theme="light"] .dorje-workspace .image-tool,
+[data-theme="light"] .dorje-workspace .icon-control,
+[data-theme="light"] .dorje-workspace .suggestion-chip {
+  color: #42564f !important;
+}
+
+[data-theme="dark"] .dorje-composer .text-slate-500 {
+  color: #cbd5e1 !important;
+}
+
+[aria-label="Review and Save"] table {
+  color: #334155;
+}
+
+[aria-label="Review and Save"] .text-slate-400 {
+  color: #475569 !important;
+}

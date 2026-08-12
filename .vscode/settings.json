@@ -1,0 +1,27 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/packages/platform/backend/.venv/bin/python",
+  "python.testing.cwd": "${workspaceFolder}/packages/platform/backend",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "tests",
+    "-v"
+  ],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/packages/platform/backend"
+  ],
+  "python.terminal.activateEnvironment": true,
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "python.testing.autoTestDiscoverOnSavePattern": "**/test_*.py",
+  "testing.automaticallyOpenPeekView": "failureInVisibleDocument",
+  "testing.openTesting": "neverOpen",
+  "testing.followRunningTest": true,
+  "playwright.reuseBrowser": true,
+  "playwright.showTrace": false,
+  "playwright.updateSnapshots": "all",
+  "testing.automaticallyOpenTestResults": "neverOpen",
+  "kimi.editorContext": "onConversationStart",
+  "kimi.enableNewConversationShortcut": true,
+  "kimi.showThinkingExpanded": true,
+  "kimi.useCtrlEnterToSend": true
+}

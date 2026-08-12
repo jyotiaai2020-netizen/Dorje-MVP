@@ -1,0 +1,29 @@
+name: Codex Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  architecture-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review checklist
+        run: |
+          echo "Review against:"
+          echo "- AGENTS.md"
+          echo "- docs/DEFINITION_OF_DONE.md"
+          echo "- docs/ARCHITECTURE_GUARDRAILS.md"
+          echo "- docs/KAMAL_ACCEPTANCE_TESTS.md"
+          echo ""
+          echo "Required checks:"
+          echo "- Tests added/updated for behavior changes"
+          echo "- CEDA/PIE used for durable memory, records, reminders, and sensitive actions"
+          echo "- Voice/text parity preserved"
+          echo "- No duplicate canonical screens introduced"
+          echo "- Unique IDs and audit/log paths maintained"

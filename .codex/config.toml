@@ -1,0 +1,22 @@
+[project]
+name = "Student-LAD"
+description = "Student-LAD by Dorje AI: a local-first, CEDA-governed student AI workspace."
+
+[commands]
+verify_fast = "scripts/verify-fast.sh"
+verify_full = "scripts/verify-full.sh"
+
+[workspace]
+primary_frontend = "packages/platform/frontend"
+primary_backend = "packages/platform/backend"
+frontend_port = 3100
+backend_port = 8100
+
+[guardrails]
+tests_required = true
+ceda_required_for_durable_context = true
+policy_required_for_sensitive_actions = true
+voice_text_parity_required = true
+unique_ids_required = true
+audit_logs_required = true
+raw_chat_memory_default = "disabled"

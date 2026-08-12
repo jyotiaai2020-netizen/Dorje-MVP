@@ -1,0 +1,68 @@
+name: Vertical capability executable specification
+description: Define one end-to-end Student-LAD capability with acceptance criteria and verification.
+title: "[Capability] "
+labels:
+  - executable-spec
+  - vertical-capability
+body:
+  - type: textarea
+    id: user_story
+    attributes:
+      label: User story
+      description: Describe the user, goal, and outcome.
+      placeholder: "As a Student-LAD user, I want ... so that ..."
+    validations:
+      required: true
+  - type: textarea
+    id: included_scope
+    attributes:
+      label: Included scope
+      description: What is in this issue.
+    validations:
+      required: true
+  - type: textarea
+    id: excluded_scope
+    attributes:
+      label: Excluded scope
+      description: What must not be changed or expanded in this issue.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Exact acceptance criteria
+      description: Use checkboxes. Criteria must be observable and testable.
+      placeholder: "- [ ] ..."
+    validations:
+      required: true
+  - type: textarea
+    id: test_commands
+    attributes:
+      label: Test commands
+      description: Include focused commands and final verification commands.
+      value: |
+        scripts/verify-fast.sh
+        scripts/verify-full.sh
+    validations:
+      required: true
+  - type: textarea
+    id: security_approval
+    attributes:
+      label: Security and approval requirements
+      description: Confirmation, privacy, audit, CEDA, PIE, tenant, and offline constraints.
+    validations:
+      required: true
+  - type: textarea
+    id: ui_evidence
+    attributes:
+      label: UI evidence required
+      description: Screenshots, Playwright traces, route names, screen-reader/a11y notes, or physical-device voice notes.
+    validations:
+      required: true
+  - type: textarea
+    id: definition_of_done
+    attributes:
+      label: Definition of done
+      description: What must be true before this issue can close.
+    validations:
+      required: true

@@ -1,0 +1,25 @@
+{
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user"
+      ]
+    },
+    "area": {
+      "type": "string",
+      "description": "The area the user is assigned to, used for confidential document access checks"
+    },
+    "manager_email": {
+      "type": "string",
+      "description": "Email of the user's manager, used for overdue task escalations (must be a registered app user)"
+    }
+  },
+  "required": [
+    "role"
+  ],
+  "name": "User",
+  "type": "object"
+}

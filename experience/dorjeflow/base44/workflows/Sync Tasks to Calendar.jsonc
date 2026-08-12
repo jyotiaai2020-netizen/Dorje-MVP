@@ -1,0 +1,42 @@
+{
+  "name": "Sync Tasks to Calendar",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "sync_tasks_to_calendar",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sync_task": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "syncToSchedule",
+            "args": {
+              "source_type": "task",
+              "source_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Sync task to calendar",
+            "description": "Create or update a ScheduleEvent from the task due date"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "task",
+      "events": [
+        "create",
+        "update"
+      ]
+    },
+    "condition": "${ .trigger.data.due_at != null }"
+  },
+  "description": "When a task with a due date is created or updated, automatically sync it to the calendar as a ScheduleEvent."
+}

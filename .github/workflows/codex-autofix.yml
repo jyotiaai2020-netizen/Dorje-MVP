@@ -1,0 +1,435 @@
+name: Codex Autofix
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Failed CI run id to repair. Leave blank to use latest failed CI run for this branch."
+        required: false
+        default: ""
+      max_diff_lines:
+        description: "Maximum allowed diff lines in a Codex repair patch."
+        required: false
+        default: "1200"
+
+permissions: {}
+
+concurrency:
+  group: codex-autofix-${{ github.event.workflow_run.head_branch || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  MAX_ATTEMPTS: "3"
+  MAX_CHANGED_FILES: "15"
+  DEFAULT_MAX_DIFF_LINES: "1200"
+  REPAIR_LABEL: codex-autofix
+
+jobs:
+  codex-patch:
+    name: Generate bounded Codex patch
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        github.event.workflow_run.conclusion == 'failure'
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      failure_signature: ${{ steps.signature.outputs.failure_signature }}
+      head_branch: ${{ steps.context.outputs.head_branch }}
+      head_sha: ${{ steps.context.outputs.head_sha }}
+      run_id: ${{ steps.context.outputs.run_id }}
+      max_diff_lines: ${{ steps.limits.outputs.max_diff_lines }}
+      patch_blocked: ${{ steps.guard.outputs.patch_blocked }}
+    steps:
+      - name: Resolve failing CI context
+        id: context
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_RUN_ID: ${{ github.event.inputs.run_id }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          if [ -n "${WORKFLOW_RUN_ID:-}" ]; then
+            RUN_ID="$WORKFLOW_RUN_ID"
+          elif [ -n "${INPUT_RUN_ID:-}" ]; then
+            RUN_ID="$INPUT_RUN_ID"
+          else
+            RUN_ID="$(gh run list --workflow CI --status failure --limit 1 --json databaseId --jq '.[0].databaseId')"
+          fi
+
+          if [ -z "${RUN_ID:-}" ] || [ "$RUN_ID" = "null" ]; then
+            echo "No failed CI run could be resolved." >&2
+            exit 1
+          fi
+
+          gh run view "$RUN_ID" --json headSha,headBranch,conclusion,event,url,name,jobs > run-metadata.json
+          HEAD_SHA="${WORKFLOW_HEAD_SHA:-$(jq -r '.headSha' run-metadata.json)}"
+          HEAD_BRANCH="${WORKFLOW_HEAD_BRANCH:-$(jq -r '.headBranch' run-metadata.json)}"
+
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "head_branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Check out failing commit with read-only credentials
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.context.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Collect failed check logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.context.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          {
+            echo "# Failed CI context"
+            echo
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Run id: $RUN_ID"
+            echo "Head branch: ${{ steps.context.outputs.head_branch }}"
+            echo "Head sha: ${{ steps.context.outputs.head_sha }}"
+            echo
+            echo "## Run metadata"
+            gh run view "$RUN_ID" --json headSha,headBranch,conclusion,event,url,name,jobs || true
+            echo
+            echo "## Failed logs"
+            gh run view "$RUN_ID" --log-failed || true
+          } > failure-context.txt
+
+      - name: Compute failure signature
+        id: signature
+        run: |
+          set -euo pipefail
+          grep -E "(FAIL|FAILED|ERROR|Error:|AssertionError|Traceback|TypeError|ReferenceError|SyntaxError|not ok|✘|×)" failure-context.txt             | sed -E 's/[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9:.+-]+/<timestamp>/g; s/[0-9a-f]{7,40}/<sha>/g; s#/home/runner/work/[^ ]+#<workspace>#g'             | head -n 120 > failure-signature.txt || true
+          if [ ! -s failure-signature.txt ]; then
+            head -n 160 failure-context.txt > failure-signature.txt
+          fi
+          SIGNATURE="$(sha256sum failure-signature.txt | awk '{print $1}')"
+          echo "failure_signature=$SIGNATURE" >> "$GITHUB_OUTPUT"
+          jq -n             --arg signature "$SIGNATURE"             --arg run_id "${{ steps.context.outputs.run_id }}"             --arg head_sha "${{ steps.context.outputs.head_sha }}"             --arg head_branch "${{ steps.context.outputs.head_branch }}"             '{failure_signature:$signature, run_id:$run_id, head_sha:$head_sha, head_branch:$head_branch}'             > codex-autofix-metadata.json
+
+      - name: Resolve repair limits
+        id: limits
+        env:
+          INPUT_MAX_DIFF_LINES: ${{ github.event.inputs.max_diff_lines }}
+          DEFAULT_MAX_DIFF_LINES: ${{ env.DEFAULT_MAX_DIFF_LINES }}
+        run: |
+          set -euo pipefail
+          MAX_DIFF_LINES="${INPUT_MAX_DIFF_LINES:-$DEFAULT_MAX_DIFF_LINES}"
+          case "$MAX_DIFF_LINES" in
+            ''|*[!0-9]*) MAX_DIFF_LINES="$DEFAULT_MAX_DIFF_LINES" ;;
+          esac
+          echo "max_diff_lines=$MAX_DIFF_LINES" >> "$GITHUB_OUTPUT"
+
+      - name: Ask Codex for a bounded patch
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          output-file: codex-autofix.patch
+          sandbox: read-only
+          safety-strategy: drop-sudo
+          prompt: |
+            You are Codex acting as the CI repair agent for one failed Student-LAD CI run.
+            Stay inside the CI repair role: fix one specific failing check on the dedicated
+            repair branch and do not perform planning, release, broad refactor, merge, deploy,
+            auth, secret, branch-protection, migration, or production-data work.
+
+            Read AGENTS.md, docs/DEFINITION_OF_DONE.md, docs/ARCHITECTURE_GUARDRAILS.md,
+            the failed logs in failure-context.txt, and the repository code needed to diagnose the failure.
+
+            Produce a single unified git patch only. Do not include commentary outside the patch.
+
+            Hard limits:
+            - Maximum changed files: ${{ env.MAX_CHANGED_FILES }}.
+            - Maximum diff lines: ${{ steps.limits.outputs.max_diff_lines }}.
+            - Never merge automatically.
+            - Never weaken or delete failing tests merely to make CI pass.
+            - Preserve unrelated behavior and avoid broad refactors.
+            - If the fix requires database migration approval, destructive action, security approval,
+              production-data access, branch-protection changes, or credential/auth configuration changes,
+              output exactly: BLOCKED: <short reason>
+
+            Never modify these paths or categories:
+            - .env, .env.*, **/.env*, secret files, token files, certificates, private keys.
+            - .github/workflows/**, .github/CODEOWNERS, .github/PULL_REQUEST_TEMPLATE.md.
+            - Branch-protection documentation or configuration.
+            - Authentication, OAuth, session, secret-management, or production configuration files.
+            - Database migrations or production data.
+
+            Context:
+            - Failed run id: ${{ steps.context.outputs.run_id }}
+            - Failed head branch: ${{ steps.context.outputs.head_branch }}
+            - Failed head sha: ${{ steps.context.outputs.head_sha }}
+            - Failure signature: ${{ steps.signature.outputs.failure_signature }}
+
+      - name: Guard patch bounds and protected files
+        id: guard
+        run: |
+          set -euo pipefail
+          PATCH_BLOCKED=false
+          : > codex-autofix.blocked
+
+          if [ ! -s codex-autofix.patch ]; then
+            echo "BLOCKED: Codex did not produce a patch." > codex-autofix.blocked
+            PATCH_BLOCKED=true
+          elif grep -q '^BLOCKED:' codex-autofix.patch; then
+            cp codex-autofix.patch codex-autofix.blocked
+            PATCH_BLOCKED=true
+          elif ! git apply --check codex-autofix.patch; then
+            echo "BLOCKED: Codex patch did not apply cleanly." > codex-autofix.blocked
+            PATCH_BLOCKED=true
+          else
+            CHANGED_FILES="$(git apply --numstat codex-autofix.patch | wc -l | tr -d ' ')"
+            DIFF_LINES="$(wc -l < codex-autofix.patch | tr -d ' ')"
+            MAX_DIFF_LINES="${{ steps.limits.outputs.max_diff_lines }}"
+
+            git apply --name-only codex-autofix.patch > codex-autofix-files.txt
+            if [ "$CHANGED_FILES" -gt "${{ env.MAX_CHANGED_FILES }}" ]; then
+              echo "BLOCKED: Patch changes $CHANGED_FILES files; maximum is ${{ env.MAX_CHANGED_FILES }}." > codex-autofix.blocked
+              PATCH_BLOCKED=true
+            elif [ "$DIFF_LINES" -gt "$MAX_DIFF_LINES" ]; then
+              echo "BLOCKED: Patch has $DIFF_LINES lines; maximum is $MAX_DIFF_LINES." > codex-autofix.blocked
+              PATCH_BLOCKED=true
+            elif grep -E '(^|/)\.env($|\.)|^\.github/workflows/|^\.github/CODEOWNERS$|^\.github/PULL_REQUEST_TEMPLATE.md$|BRANCH_PROTECTION|(^|/)(auth|oauth|session|secret|token|credential)[^/]*\.(py|ts|tsx|js|jsx|yml|yaml|toml|json)$|(^|/)(migrations|versions)/|(^|/)(prod|production)[-_]?(data|db|database)' codex-autofix-files.txt; then
+              echo "BLOCKED: Patch touches protected secrets, auth, workflow, migration, branch-protection, or production-data paths." > codex-autofix.blocked
+              PATCH_BLOCKED=true
+            fi
+          fi
+
+          echo "patch_blocked=$PATCH_BLOCKED" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Codex patch artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-autofix-patch
+          if-no-files-found: error
+          path: |
+            codex-autofix.patch
+            codex-autofix.blocked
+            codex-autofix-files.txt
+            codex-autofix-metadata.json
+            failure-context.txt
+            failure-signature.txt
+
+  open-or-update-repair-pr:
+    name: Open or update draft repair PR
+    needs: codex-patch
+    if: ${{ needs.codex-patch.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Download Codex patch artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: codex-autofix-patch
+          path: codex-autofix-artifact
+
+      - name: Check out failing commit for repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.codex-patch.outputs.head_sha }}
+          fetch-depth: 0
+
+      - name: Resolve PR metadata, attempts and repeated signatures
+        id: prmeta
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const metadata = JSON.parse(fs.readFileSync(path.join('codex-autofix-artifact', 'codex-autofix-metadata.json'), 'utf8'));
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const headBranch = metadata.head_branch;
+            const safeBranch = headBranch.replace(/[^A-Za-z0-9._-]/g, '-');
+            const repairBranch = `codex-autofix/${safeBranch}`.slice(0, 240);
+
+            const prsForCommit = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner,
+              repo,
+              commit_sha: metadata.head_sha,
+            });
+            const sourcePr = prsForCommit.data.find((pr) => pr.state === 'open') || prsForCommit.data[0] || null;
+            const baseBranch = sourcePr ? sourcePr.head.ref : headBranch;
+            const targetBase = baseBranch || context.payload.repository.default_branch;
+
+            const repairPrs = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              head: `${owner}:${repairBranch}`,
+              base: targetBase,
+              per_page: 10,
+            });
+            const repairPr = repairPrs.data[0] || null;
+
+            let attempt = 1;
+            let signatureRepeats = 0;
+            if (repairPr) {
+              for (const label of repairPr.labels || []) {
+                const match = /^codex-attempt:(\d+)$/.exec(label.name);
+                if (match) attempt = Math.max(attempt, Number(match[1]) + 1);
+              }
+              const comments = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number: repairPr.number,
+                per_page: 100,
+              });
+              signatureRepeats = comments.data.filter((comment) =>
+                comment.body && comment.body.includes(`failure-signature:${metadata.failure_signature}`)
+              ).length;
+            }
+
+            core.setOutput('repair_branch', repairBranch);
+            core.setOutput('base_branch', targetBase);
+            core.setOutput('source_pr', sourcePr ? String(sourcePr.number) : '');
+            core.setOutput('repair_pr', repairPr ? String(repairPr.number) : '');
+            core.setOutput('attempt', String(attempt));
+            core.setOutput('signature_repeats', String(signatureRepeats));
+            core.setOutput('failure_signature', metadata.failure_signature);
+
+
+      - name: Ensure autofix labels exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh label create codex-autofix --color 7c3aed --description "Automated Codex repair PR" || true
+          gh label create codex-attempt:1 --color 93c5fd --description "Codex autofix attempt 1" || true
+          gh label create codex-attempt:2 --color fbbf24 --description "Codex autofix attempt 2" || true
+          gh label create codex-attempt:3 --color fb7185 --description "Codex autofix attempt 3" || true
+          gh label create codex-blocked --color dc2626 --description "Codex autofix stopped by guardrail" || true
+          gh label create human-review-required --color b91c1c --description "Human review is required before proceeding" || true
+
+      - name: Stop when blocked, attempt limit reached, or signature repeats
+        id: stop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ATTEMPT: ${{ steps.prmeta.outputs.attempt }}
+          MAX_ATTEMPTS: ${{ env.MAX_ATTEMPTS }}
+          REPAIR_PR: ${{ steps.prmeta.outputs.repair_pr }}
+          SOURCE_PR: ${{ steps.prmeta.outputs.source_pr }}
+          SIGNATURE_REPEATS: ${{ steps.prmeta.outputs.signature_repeats }}
+          FAILURE_SIGNATURE: ${{ steps.prmeta.outputs.failure_signature }}
+        run: |
+          set -euo pipefail
+          STOP=false
+          REASON=""
+
+          if [ -s codex-autofix-artifact/codex-autofix.blocked ]; then
+            STOP=true
+            REASON="$(cat codex-autofix-artifact/codex-autofix.blocked)"
+          elif [ "$ATTEMPT" -gt "$MAX_ATTEMPTS" ]; then
+            STOP=true
+            REASON="BLOCKED: Maximum Codex autofix attempts reached ($MAX_ATTEMPTS)."
+          elif [ "$SIGNATURE_REPEATS" -ge 1 ]; then
+            STOP=true
+            REASON="BLOCKED: Identical failure signature repeated twice: $FAILURE_SIGNATURE."
+          fi
+
+          TARGET_PR="${REPAIR_PR:-$SOURCE_PR}"
+          if [ "$STOP" = "true" ]; then
+            if [ -n "${TARGET_PR:-}" ]; then
+              gh pr edit "$TARGET_PR" --add-label codex-blocked --add-label human-review-required || true
+              cat > codex-autofix-stop-comment.md <<STOP_COMMENT
+          Codex autofix stopped.
+
+          $REASON
+
+          failure-signature:$FAILURE_SIGNATURE
+          STOP_COMMENT
+              gh pr comment "$TARGET_PR" --body-file codex-autofix-stop-comment.md || true
+            fi
+            echo "stopped=true" >> "$GITHUB_OUTPUT"
+            echo "$REASON"
+          else
+            echo "stopped=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Apply Codex patch
+        if: ${{ steps.stop.outputs.stopped != 'true' }}
+        run: |
+          set -euo pipefail
+          git apply codex-autofix-artifact/codex-autofix.patch
+          if git diff --quiet; then
+            echo "Codex patch applied but produced no working-tree changes." >&2
+            exit 1
+          fi
+
+      - name: Commit repair patch
+        if: ${{ steps.stop.outputs.stopped != 'true' }}
+        env:
+          REPAIR_BRANCH: ${{ steps.prmeta.outputs.repair_branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "codex-autofix[bot]"
+          git config user.email "codex-autofix[bot]@users.noreply.github.com"
+          git fetch origin "$REPAIR_BRANCH" || true
+          git switch -C "$REPAIR_BRANCH"
+          git add -A
+          git commit -m "Codex autofix for failed CI"
+          git push --force-with-lease --set-upstream origin "$REPAIR_BRANCH"
+
+      - name: Open or update draft repair PR
+        if: ${{ steps.stop.outputs.stopped != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ATTEMPT: ${{ steps.prmeta.outputs.attempt }}
+          BASE_BRANCH: ${{ steps.prmeta.outputs.base_branch }}
+          REPAIR_BRANCH: ${{ steps.prmeta.outputs.repair_branch }}
+          REPAIR_PR: ${{ steps.prmeta.outputs.repair_pr }}
+          SOURCE_PR: ${{ steps.prmeta.outputs.source_pr }}
+          FAILURE_SIGNATURE: ${{ steps.prmeta.outputs.failure_signature }}
+          RUN_ID: ${{ needs.codex-patch.outputs.run_id }}
+          HEAD_SHA: ${{ needs.codex-patch.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          BODY_FILE="codex-autofix-pr-body.md"
+          cat > "$BODY_FILE" <<EOF
+          This draft PR was generated by the bounded Codex autofix workflow.
+
+          Source failed CI run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}
+          Failed commit: ${HEAD_SHA}
+          Source PR: ${SOURCE_PR:-none}
+          Attempt: ${ATTEMPT}/${MAX_ATTEMPTS}
+
+          Controls applied:
+          - Patch generated in a read-only Codex job.
+          - PR opened/updated only by this separate write-enabled job.
+          - Maximum changed files: ${MAX_CHANGED_FILES}.
+          - Maximum diff lines: ${{ needs.codex-patch.outputs.max_diff_lines }}.
+          - No automatic merge.
+          - Protected paths, auth config, secrets, migrations, production data and branch protections are blocked.
+
+          failure-signature:${FAILURE_SIGNATURE}
+          EOF
+
+          if [ -n "${REPAIR_PR:-}" ]; then
+            gh pr edit "$REPAIR_PR" --body-file "$BODY_FILE" --add-label codex-autofix --add-label "codex-attempt:${ATTEMPT}"
+            cat > codex-autofix-update-comment.md <<UPDATE_COMMENT
+          Updated Codex autofix attempt ${ATTEMPT}/${MAX_ATTEMPTS}.
+
+          failure-signature:${FAILURE_SIGNATURE}
+          UPDATE_COMMENT
+            gh pr comment "$REPAIR_PR" --body-file codex-autofix-update-comment.md
+          else
+            gh pr create               --draft               --base "$BASE_BRANCH"               --head "$REPAIR_BRANCH"               --title "Codex autofix for failed CI"               --body-file "$BODY_FILE"               --label codex-autofix               --label "codex-attempt:${ATTEMPT}"
+          fi

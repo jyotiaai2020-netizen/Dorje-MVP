@@ -1,0 +1,55 @@
+{
+  "name": "UserPreference",
+  "type": "object",
+  "properties": {
+    "deployment_mode": {
+      "type": "string",
+      "enum": [
+        "local",
+        "hybrid",
+        "cloud"
+      ],
+      "default": "local"
+    },
+    "cloud_approval_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "sensitive_files_local": {
+      "type": "boolean",
+      "default": true
+    },
+    "monthly_cloud_budget": {
+      "type": "number",
+      "default": 0
+    },
+    "detailed_reasoning": {
+      "type": "boolean",
+      "default": true
+    },
+    "cite_sources": {
+      "type": "boolean",
+      "default": true
+    },
+    "retention_policy": {
+      "type": "object"
+    },
+    "accessibility": {
+      "type": "object"
+    },
+    "notification_policy": {
+      "type": "object"
+    }
+  },
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

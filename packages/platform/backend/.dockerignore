@@ -1,0 +1,11 @@
+.env
+.next
+__pycache__
+*.pyc
+*.db
+venv
+venv_py314
+reports
+uploads
+vectorstore
+tests
