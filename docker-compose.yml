@@ -50,7 +50,18 @@ services:
       NEXT_PUBLIC_APP_TITLE: DorjeAI Student Edition
       NEXT_PUBLIC_API_URL: http://localhost:8100
     ports:
-      - "3100:3000"
+      - "3101:3000"
+    depends_on:
+      - student-backend
+
+  dorjeflow-experience:
+    build:
+      context: ./experience/dorjeflow
+      args:
+        VITE_RUNTIME_PROVIDER: student-lad
+        VITE_STUDENT_LAD_API_URL: http://localhost:8100/api/v1
+    ports:
+      - "3100:80"
     depends_on:
       - student-backend
 

@@ -6,6 +6,8 @@ import StudentLAD from './pages/StudentLAD';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
+import StudentLadAuthGate from './components/StudentLadAuthGate';
+import { runtimeProvider } from './services/studentLadApi';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -42,15 +44,21 @@ const AuthenticatedApp = () => {
 
 function App() {
 
+  const shell = (
+    <QueryClientProvider client={queryClientInstance}>
+      <Router>
+        <ScrollToTop />
+        {runtimeProvider === 'base44' ? <AuthenticatedApp /> : <StudentLadAuthGate><StudentLAD /></StudentLadAuthGate>}
+      </Router>
+      <Toaster />
+    </QueryClientProvider>
+  );
+
+  if (runtimeProvider !== 'base44') return shell;
+
   return (
     <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <ScrollToTop />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
+      {shell}
     </AuthProvider>
   )
 }

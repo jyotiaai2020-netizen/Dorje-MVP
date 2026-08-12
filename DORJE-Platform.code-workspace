@@ -11,6 +11,10 @@
     {
       "name": "Student Frontend Tests",
       "path": "packages/platform/frontend"
+    },
+    {
+      "name": "DorjeFlow Experience",
+      "path": "experience/dorjeflow"
     }
   ],
   "settings": {
@@ -39,7 +43,8 @@
     "recommendations": [
       "ms-python.python",
       "ms-python.vscode-pylance",
-      "ms-playwright.playwright"
+      "ms-playwright.playwright",
+      "dbaeumer.vscode-eslint"
     ]
   }
 }

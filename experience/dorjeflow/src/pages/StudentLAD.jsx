@@ -2,12 +2,12 @@
 import { useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  Accessibility, AlertTriangle, BarChart3, Bell, BookOpen, Bot, BriefcaseBusiness,
-  CalendarDays, Check, CheckCircle2, ChevronRight, Clock3, Cloud, CloudCog,
-  FileText, FolderOpen, GraduationCap, Home, Laptop,
-  LayoutGrid, LockKeyhole, Menu, MessageSquareText, Mic, MicOff, MoreHorizontal,
-  Plus, Pencil, Save, Search, Send, Settings, ShieldCheck, Sparkles, Sun, Target, Trash2,
-  Upload, UserRound, Wifi, WifiOff, X
+  Accessibility, AlertTriangle, BarChart3, Bell,
+  CalendarDays, Check, CheckCircle2, ChevronRight, Clock3,
+  FileText, Home,
+  LayoutGrid, LockKeyhole, Menu, Mic, MicOff, MoreHorizontal,
+  Plus, Pencil, Search, Settings, ShieldCheck, Sparkles, Sun, Target, Trash2,
+  Upload, Wifi, WifiOff, X
 } from "lucide-react";
 import "./studentlad.css";
 import CalendarView from "@/components/CalendarView";
@@ -15,6 +15,7 @@ import AreaModal from "@/components/AreaModal";
 import WorkspaceAssistant from "@/components/WorkspaceAssistant";
 import SettingsPanel from "@/components/SettingsPanel";
 import AreaProgressLineage, { areaStats } from "@/components/AreaProgressLineage";
+import { useStudentLadTasks } from "@/hooks/useStudentLadTasks";
 
 const initialTasks = [
   { id: "t1", title: "Review science assignment rubric", area: "Science Assignment", time: "10:15 AM", duration: 30, due: "Today", priority: "high", status: "planned", color: "teal", points: 3, dependsOn: null },
@@ -107,7 +108,7 @@ function TopBar({ syncState, onMenu }) {
       </div>
       <label className="global-search"><Search size={19} /><input aria-label="Search anything" placeholder="Search anything…" /></label>
       <div className="top-actions">
-        <span className={syncState === "offline" ? "sync-pill offline" : "sync-pill"}>{syncState === "offline" ? <WifiOff size={16} /> : <Wifi size={16} />}{syncState}</span>
+        <span className={syncState.includes("offline") ? "sync-pill offline" : "sync-pill"}>{syncState.includes("offline") ? <WifiOff size={16} /> : <Wifi size={16} />}{syncState}</span>
         <button className="icon-button notification"><Bell size={20} /><span>3</span></button>
         <button className="access-button"><Accessibility size={18} /> Accessibility</button>
         <button className="profile"><span className="avatar">M</span><span>Maya</span></button>
@@ -259,16 +260,17 @@ function AddTaskModal({open,onClose,onAdd,tasks}){
 
 export default function StudentLAD(){
  const location=useLocation();
- const [tasks,setTasks]=usePersistedState("studentlad.tasks",initialTasks);
+ const {tasks,syncState:runtimeSyncState,completeTask:addOrCompleteTask,addTask}=useStudentLadTasks(initialTasks);
  const [areas,setAreas]=usePersistedState("studentlad.areas",initialAreas);
  const [deploymentMode,setDeploymentMode]=usePersistedState("studentlad.deploymentMode","local");
- const [syncState,setSyncState]=usePersistedState("studentlad.syncState","online");
+ const [selectedSyncState,setSyncState]=usePersistedState("studentlad.syncState","online");
+ const syncState=runtimeSyncState==="base44"?selectedSyncState:runtimeSyncState;
  const [listening,setListening]=useState(false);
  const [sidebarOpen,setSidebarOpen]=useState(false);
  const [addOpen,setAddOpen]=useState(false);
  const [areaModalOpen,setAreaModalOpen]=useState(false);
  const [editingArea,setEditingArea]=useState(null);
- const onComplete=id=>setTasks(tasks.map(t=>t.id===id?{...t,status:t.status==="completed"?"planned":"completed"}:t));
+ const onComplete=id=>addOrCompleteTask(id);
  const screen=useMemo(()=>{
   if(location.pathname==="/today")return <TodayPage tasks={tasks} onComplete={onComplete}/>;
   if(location.pathname==="/areas")return <AreasPage areas={areas} tasks={tasks} onAddArea={()=>{setEditingArea(null);setAreaModalOpen(true);}} onEditArea={a=>{setEditingArea(a);setAreaModalOpen(true);}} onDeleteArea={id=>setAreas(areas.filter(a=>a.id!==id))}/>;
@@ -280,5 +282,5 @@ export default function StudentLAD(){
   return <Dashboard tasks={tasks} areas={areas} onComplete={onComplete} openAdd={()=>setAddOpen(true)}/>;
  },[location.pathname,tasks,areas,deploymentMode,syncState]);
  const saveArea=data=>{if(editingArea){setAreas(areas.map(a=>a.id===editingArea.id?{...a,...data}:a));}else{setAreas([...areas,{...data,id:"a"+Date.now(),icon:"folder"}]);}setAreaModalOpen(false);setEditingArea(null);};
- return <div className="app-shell"><Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} listening={listening} setListening={setListening}/><div className="app-main"><TopBar syncState={syncState} onMenu={()=>setSidebarOpen(true)}/>{screen}<footer><span><ShieldCheck size={15}/> Verified actions · Local-first privacy</span><span>Runtime: {deploymentMode}</span></footer></div><AddTaskModal open={addOpen} onClose={()=>setAddOpen(false)} onAdd={task=>setTasks([...tasks,task])} tasks={tasks}/><AreaModal open={areaModalOpen} editing={editingArea} onClose={()=>{setAreaModalOpen(false);setEditingArea(null);}} onSave={saveArea}/></div>;
+ return <div className="app-shell"><Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} listening={listening} setListening={setListening}/><div className="app-main"><TopBar syncState={syncState} onMenu={()=>setSidebarOpen(true)}/>{screen}<footer><span><ShieldCheck size={15}/> Verified actions · Local-first privacy</span><span>Runtime: {deploymentMode}</span></footer></div><AddTaskModal open={addOpen} onClose={()=>setAddOpen(false)} onAdd={addTask} tasks={tasks}/><AreaModal open={areaModalOpen} editing={editingArea} onClose={()=>{setAreaModalOpen(false);setEditingArea(null);}} onSave={saveArea}/></div>;
 }
