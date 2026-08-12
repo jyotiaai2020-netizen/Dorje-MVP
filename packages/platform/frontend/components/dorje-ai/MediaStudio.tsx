@@ -1,0 +1,12 @@
+'use client';
+
+import { useState } from 'react';
+import { apiFetch } from '@/lib/api';
+
+const actions = [['image-prompt','Generate Image Prompt'],['carousel','Generate Carousel'],['video-script','Generate Video Script'],['captions','Generate Caption Pack']] as const;
+
+export default function MediaStudio({ context }: { context: string }) {
+  const [objective, setObjective] = useState(''); const [audience, setAudience] = useState(''); const [platform, setPlatform] = useState('LinkedIn'); const [content, setContent] = useState(''); const [loading, setLoading] = useState(''); const [error, setError] = useState('');
+  async function generate(kind: string) { if (!objective.trim()) return; setLoading(kind); setError(''); try { const result = await apiFetch<{ content: string }>(`/api/v1/dorje-ai/media/${kind}`, { method: 'POST', body: JSON.stringify({ objective, audience, platform, context }) }); setContent(result.content); } catch (err) { setError(err instanceof Error ? err.message : 'Unable to generate media copy.'); } finally { setLoading(''); } }
+  return <div className="space-y-3"><select className="field" value={platform} onChange={(e) => setPlatform(e.target.value)}>{['LinkedIn','Instagram','Facebook','Medium','YouTube'].map((p) => <option key={p}>{p}</option>)}</select><input className="field" placeholder="Audience" value={audience} onChange={(e) => setAudience(e.target.value)} /><textarea className="field min-h-24" placeholder="Describe the asset objective" value={objective} onChange={(e) => setObjective(e.target.value)} /><div className="grid grid-cols-2 gap-2">{actions.map(([kind,label]) => <button key={kind} type="button" onClick={() => generate(kind)} disabled={Boolean(loading) || !objective.trim()} className="action-secondary text-left">{loading === kind ? 'Generating…' : label}</button>)}</div>{error ? <p className="text-xs text-rose-300">{error}</p> : null}<textarea className="field min-h-56" placeholder="Generated prompt, script, carousel, or captions" value={content} onChange={(e) => setContent(e.target.value)} /><div className="flex gap-2"><button type="button" onClick={() => void navigator.clipboard.writeText(content)} disabled={!content} className="action-secondary">Copy</button><button type="button" disabled className="action-disabled">Save to Report</button></div><p className="security-note">DorjeAI creates copy, prompts, scripts, alt text, and storyboards—not image or video files in this studio.</p></div>;
+}

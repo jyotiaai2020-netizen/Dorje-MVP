@@ -1,0 +1,9 @@
+# Student-LAD ownership
+* @jyotiaai2020-netizen
+
+# Platform architecture and backend governance
+/packages/platform/backend/ @jyotiaai2020-netizen
+/docs/ @jyotiaai2020-netizen
+
+# Frontend product surfaces and e2e tests
+/packages/platform/frontend/ @jyotiaai2020-netizen

@@ -1,0 +1,58 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Tests: All Python",
+      "type": "shell",
+      "command": "${workspaceFolder}/packages/platform/backend/.venv/bin/python",
+      "args": ["-m", "pytest", "tests", "-v"],
+      "options": { "cwd": "${workspaceFolder}/packages/platform/backend" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: Python with coverage",
+      "type": "shell",
+      "command": "${workspaceFolder}/packages/platform/backend/.venv/bin/python",
+      "args": ["-m", "pytest", "tests", "--cov=app", "--cov-report=term-missing", "--cov-report=html"],
+      "options": { "cwd": "${workspaceFolder}/packages/platform/backend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: Playwright UI",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "test:e2e"],
+      "options": { "cwd": "${workspaceFolder}/packages/platform/frontend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: Frontend lint",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "lint"],
+      "options": { "cwd": "${workspaceFolder}/packages/platform/frontend" },
+      "problemMatcher": ["$eslint-stylish"]
+    },
+    {
+      "label": "Tests: Frontend production build",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "options": { "cwd": "${workspaceFolder}/packages/platform/frontend" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: Full validation",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Tests: All Python",
+        "Tests: Frontend lint",
+        "Tests: Frontend production build",
+        "Tests: Playwright UI"
+      ],
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    }
+  ]
+}

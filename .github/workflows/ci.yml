@@ -1,0 +1,233 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "agent/**"
+      - "feature/**"
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: backend-tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install --upgrade pip
+          ./.venv/bin/python -m pip install -r requirements.txt
+          ./.venv/bin/python -m pip install -r requirements-dev.txt
+      - name: FastAPI, CEDA, memory, database validation
+        run: ./.venv/bin/python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Database migration validation
+        run: |
+          ./.venv/bin/alembic current
+          ./.venv/bin/alembic heads
+
+  frontend-quality:
+    name: frontend-quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/platform/frontend/package-lock.json
+      - run: npm ci
+      - name: ESLint
+        run: npm run lint
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
+
+  action-engine:
+    name: action-engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/platform/frontend/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install frontend dependencies
+        working-directory: packages/platform/frontend
+        run: npm ci
+      - name: Install Playwright Chromium
+        working-directory: packages/platform/frontend
+        run: npx playwright install --with-deps chromium
+      - name: CRUD, approval, undo, lineage UI contracts
+        working-directory: packages/platform/frontend
+        run: |
+          npx playwright test \
+            tests/e2e/kamal-reminder.spec.ts \
+            tests/e2e/context-os-management.spec.ts \
+            tests/e2e/calendar-timeline.spec.ts \
+            --project=chromium
+      - name: Install backend dependencies
+        working-directory: packages/platform/backend
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install --upgrade pip
+          ./.venv/bin/python -m pip install -r requirements.txt
+          ./.venv/bin/python -m pip install -r requirements-dev.txt
+      - name: CRUD, approval, undo, lineage backend contracts
+        working-directory: packages/platform/backend
+        run: |
+          ./.venv/bin/python -m unittest \
+            tests.test_ceda_service \
+            tests.test_ceda_structured \
+            tests.test_context_graph_service \
+            tests.test_memory_architecture \
+            tests.test_policy_intelligence \
+            tests.test_suggestions -v
+
+  e2e-chromium:
+    name: e2e-chromium
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/platform/frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Primary browser workflows
+        run: npx playwright test --project=chromium
+
+  e2e-webkit:
+    name: e2e-webkit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/platform/frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps webkit
+      - name: Safari compatibility
+        run: npx playwright test --project=webkit
+
+  accessibility:
+    name: accessibility
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/platform/frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Keyboard, screen-reader, senior-mode, text visibility checks
+        run: |
+          npx playwright test \
+            tests/e2e/text-visibility.spec.ts \
+            tests/e2e/student-settings.spec.ts \
+            tests/e2e/student-route-architecture.spec.ts \
+            --project=chromium --project=webkit
+
+  offline-sync:
+    name: offline-sync
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/platform/frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Queue, retry, conflict, tombstone, connector and staged offline behavior
+        run: |
+          npx playwright test \
+            tests/e2e/staged-attachment.spec.ts \
+            tests/e2e/connector-document-email.spec.ts \
+            tests/e2e/workspace-ai-file-workflow.spec.ts \
+            tests/e2e/workspace-tools-architecture.spec.ts \
+            --project=chromium --project=webkit
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: packages/platform/frontend/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install frontend dependencies
+        working-directory: packages/platform/frontend
+        run: npm ci
+      - name: Frontend dependency security
+        working-directory: packages/platform/frontend
+        run: npm audit --audit-level=high
+      - name: Install backend dependencies
+        working-directory: packages/platform/backend
+        run: |
+          python -m venv .venv
+          ./.venv/bin/python -m pip install --upgrade pip
+          ./.venv/bin/python -m pip install -r requirements.txt
+          ./.venv/bin/python -m pip install -r requirements-dev.txt
+      - name: Backend dependency consistency
+        working-directory: packages/platform/backend
+        run: ./.venv/bin/python -m pip check
+      - name: Secret leakage guard
+        run: |
+          ! git grep -n -I -E "(GOOGLE_CLIENT_[S]ECRET=[^[:space:]#]+|TOKEN_ENCRYPTION_[K]EY=[^[:space:]#]+|GOCSPX[-][A-Za-z0-9_-]+|sk[-][A-Za-z0-9_-]{20,})" -- \
+            . \
+            ':!docs/**' \
+            ':!**/*.md' \
+            ':!**/package-lock.json' \
+            ':!**/.env.example' \
+            ':!packages/platform/backend/tests/**'
+      - name: Unsafe action and focused-test guard
+        run: |
+          ! git grep -n -I -E "(test\\.only|describe\\.only|it\\.only|\\.skip\\(|autoApprove|autoSync|bypassConfirmation)" -- \
+            packages/platform/frontend \
+            packages/platform/backend \
+            ':!**/package-lock.json' \
+            ':!**/node_modules/**' \
+            ':!**/__pycache__/**'

@@ -1,0 +1,12 @@
+{
+  "name": "student-lad",
+  "private": true,
+  "scripts": {
+    "frontend:lint": "npm --prefix packages/platform/frontend run lint",
+    "frontend:build": "npm --prefix packages/platform/frontend run build",
+    "test:python": "cd packages/platform/backend && ./.venv/bin/python -m unittest discover -s tests -v",
+    "test:e2e": "npm --prefix packages/platform/frontend run test:e2e",
+    "test:ports": "node scripts/check-dev-ports.mjs",
+    "test:all": "npm run test:python && npm run frontend:lint && npm run frontend:build && npm run test:ports && npm run test:e2e"
+  }
+}

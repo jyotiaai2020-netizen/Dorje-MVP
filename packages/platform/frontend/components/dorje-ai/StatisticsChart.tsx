@@ -1,0 +1,35 @@
+'use client';
+
+import { useState } from 'react';
+import NextImage from 'next/image';
+import { API_BASE_URL, authenticatedFetch, authorizationHeaders } from '@/lib/api';
+import type { StructuredTableData } from './StructuredTableView';
+
+type Props = { table: StructuredTableData; onUseInPrompt?: (content: string) => void; onUseInEmail?: (content: string) => void; onUseInSocial?: (content: string) => void };
+const UUID_DATASET = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function escapeXml(value: string) { return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+export default function StatisticsChart({ table, onUseInPrompt, onUseInEmail, onUseInSocial }: Props) {
+  const [notice, setNotice] = useState(''); const asset = table.chart_asset;
+  if (!asset) return <section className="border-t border-amber-400/20 bg-amber-500/5 p-3"><p className="text-xs text-amber-200">This table is not bound to a locked dataset, so no chart was rendered. Regenerate with validated source data.</p><button type="button" onClick={() => onUseInPrompt?.('Generate a validated chart from this table and preserve every source row and value.')} className="mt-2 rounded-lg border border-amber-300/30 px-3 py-1.5 text-xs text-amber-100">Validate and generate chart</button></section>;
+  const chartAsset = asset;
+
+  const sourceColumns = asset.source_columns?.length ? asset.source_columns : table.source_columns?.length ? table.source_columns : table.columns.slice(0, 2);
+  const sourceRows = asset.exact_source_rows?.length ? asset.exact_source_rows : table.rows.map((row) => row.slice(0, sourceColumns.length));
+  const rowCount = asset.source_row_count ?? sourceRows.length;
+  const legacy = !asset.dataset_id || UUID_DATASET.test(asset.dataset_id) || asset.validation_status !== 'passed' || table.locked !== true || table.validation_status !== 'passed';
+  const context = `Chart: ${asset.title}\nType: ${asset.chart_type}\nDataset ID: ${asset.dataset_id}\nSource columns: ${sourceColumns.join(', ')}\nSource rows: ${sourceRows.map((row) => row.join(' | ')).join('; ')}`;
+  function saveBlob(blob: Blob, extension: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${chartAsset.title.replace(/[^a-z0-9-_]/gi, '-') || 'dorje-chart'}.${extension}`; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  async function downloadStored(url: string, extension: string) { const response = await authenticatedFetch(`${API_BASE_URL}${url}`, { headers: authorizationHeaders() }); if (!response.ok) { setNotice('Asset download failed'); return; } saveBlob(await response.blob(), extension); }
+  async function copyChart() { try { const blob = await (await fetch(chartAsset.image_data_url)).blob(); await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); setNotice('High-resolution chart copied'); } catch { setNotice('Clipboard image copy is not supported'); } window.setTimeout(() => setNotice(''), 1800); }
+  async function exportExcel() { const response = await authenticatedFetch(`${API_BASE_URL}/api/v1/dorje-ai/table/xlsx`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authorizationHeaders() }, body: JSON.stringify({ ...table, title: `${chartAsset.title} data` }) }); if (response.ok) saveBlob(await response.blob(), 'xlsx'); }
+
+  return <section className="border-t border-slate-700 bg-slate-900/50 p-3">
+    <div className="flex flex-wrap items-start justify-between gap-2"><div><h4 className="text-sm font-semibold text-emerald-100">{asset.title}</h4><p className="mt-1 text-[11px] text-slate-300">Generated from: User-provided dataset</p><p className="text-[11px] text-slate-400">Dataset: {asset.dataset_id || 'Legacy dataset'}</p><p className="text-[11px] text-slate-400">Rows: {rowCount}</p><p className="text-[11px] text-slate-400">Columns: {sourceColumns.join(', ')}</p><p className={`text-[11px] font-medium ${legacy ? 'text-amber-300' : 'text-emerald-300'}`}>Validation: {legacy ? 'Legacy dataset — regeneration required' : 'Passed'}</p>{legacy ? <p className="mt-2 rounded-lg border border-amber-400/20 bg-amber-500/10 p-2 text-xs text-amber-200">This chart uses a legacy dataset. Regenerate with validated source data.</p> : null}</div><span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2 py-1 text-[10px] text-emerald-300">{legacy ? 'Legacy chart' : 'Locked deterministic chart'}</span></div>
+    <div className="mt-3 overflow-hidden rounded-xl border border-slate-700 bg-white"><NextImage src={asset.image_data_url} alt={`${asset.chart_type}: ${asset.title}`} width={1200} height={720} unoptimized className="h-auto w-full" /></div>
+    {asset.interpretation ? <p className="mt-2 text-xs leading-5 text-slate-300">{asset.interpretation}</p> : null}
+    <div className="mt-2 flex flex-wrap gap-1.5">{notice ? <span className="mr-2 text-xs text-emerald-300">✓ {notice}</span> : null}{!legacy ? <><ChartButton icon="📋" title="Copy chart as high-resolution PNG" onClick={() => void copyChart()} /><ChartButton icon="PNG" title="Download PNG" onClick={() => void downloadStored(asset.png_url, 'png')} /><ChartButton icon="SVG" title="Download SVG" onClick={() => void downloadStored(asset.svg_url, 'svg')} /><ChartButton icon="📄" title="Export chart PDF" onClick={() => { const popup = window.open('', '_blank'); if (popup) { popup.document.write(`<html><body><h1>${escapeXml(asset.title)}</h1><img style="max-width:100%" src="${asset.image_data_url}"/><h2>Source data</h2><pre>${escapeXml(sourceRows.map((row) => row.join('\t')).join('\n'))}</pre><script>onload=()=>print()<\/script></body></html>`); popup.document.close(); } }} /><ChartButton icon="📊" title="Export Excel source data" onClick={() => void exportExcel()} /><ChartButton icon="✏️" title="Edit chart using verified dataset" onClick={() => onUseInPrompt?.(`Edit chart ${asset.chart_id} using dataset ${asset.dataset_id}: `)} /><ChartButton icon="📑" title="Use chart in report" onClick={() => onUseInPrompt?.(`Create a report using chart ${asset.chart_id} and dataset ${asset.dataset_id}.`)} /><ChartButton icon="✉️" title="Use chart in email" onClick={() => onUseInEmail?.(`${context}\nChart image: ${asset.image_data_url}`)} /><ChartButton icon="📣" title="Use chart in social post" onClick={() => onUseInSocial?.(`${context}\nChart image: ${asset.image_data_url}`)} /></> : null}<ChartButton icon="🔄" title="Regenerate with validated source data" onClick={() => onUseInPrompt?.('Regenerate this legacy dataset chart from the original user-provided source data.')} /></div>
+  </section>;
+}
+
+function ChartButton({ icon, title, onClick }: { icon: string; title: string; onClick: () => void }) { return <button type="button" title={title} aria-label={title} onClick={onClick} className="flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-600 px-1.5 text-[10px] text-slate-200 hover:bg-slate-800">{icon}</button>; }
