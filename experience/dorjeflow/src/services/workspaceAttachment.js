@@ -27,8 +27,11 @@ function validateExtractedText(text) {
 }
 
 async function extractPdfText(file) {
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+  const [pdfjs, workerModule] = await Promise.all([
+    import('pdfjs-dist/legacy/build/pdf.mjs'),
+    import('pdfjs-dist/legacy/build/pdf.worker.mjs?url'),
+  ]);
+  pdfjs.GlobalWorkerOptions.workerSrc = workerModule.default;
   const bytes = new Uint8Array(await file.arrayBuffer());
   let document;
   try {
@@ -74,4 +77,3 @@ export async function extractDocumentText(file) {
     text: validateExtractedText(text),
   };
 }
-import pdfWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.mjs?url';

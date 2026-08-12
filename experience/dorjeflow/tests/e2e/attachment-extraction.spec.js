@@ -11,6 +11,11 @@ test('extracts PDF text locally without an upload request', async ({ page }) => 
     if (/upload|UploadFile/i.test(request.url())) requests.push(request.url());
   });
   const extracted = await page.evaluate(async () => {
+    // Older Safari/WebKit versions do not expose ReadableStream.prototype.values.
+    // PDF extraction must not depend on that newer stream-iteration API.
+    if (globalThis.ReadableStream?.prototype) {
+      Object.defineProperty(globalThis.ReadableStream.prototype, 'values', { configurable: true, value: undefined });
+    }
     const [{ jsPDF }, { extractDocumentText }] = await Promise.all([
       import('/@id/jspdf'),
       import('/src/services/workspaceAttachment.js'),
