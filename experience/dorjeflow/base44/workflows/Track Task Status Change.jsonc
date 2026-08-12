@@ -1,0 +1,40 @@
+{
+  "name": "Track Task Status Change",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "track_task_status_change",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "record_change": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "recordStatusChange",
+            "args": {
+              "task_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Record status change",
+            "description": "Stamp last_status_change_at when a task's status changes"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "task",
+      "events": [
+        "update"
+      ]
+    },
+    "condition": "${ .trigger.changed_fields | index(\"status\") != null }"
+  },
+  "description": "Whenever a task's status changes, stamps last_status_change_at and clears any pending stale-notification marker, so the 7-day stale-status check is accurate."
+}

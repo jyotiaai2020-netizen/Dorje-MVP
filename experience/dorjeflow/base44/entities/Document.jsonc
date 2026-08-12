@@ -1,0 +1,43 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Document title"
+    },
+    "area": {
+      "type": "string",
+      "description": "Area the document is assigned to"
+    },
+    "status": {
+      "type": "string",
+      "description": "Document status, e.g. Draft, Verified, In use"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to the uploaded file"
+    },
+    "content": {
+      "type": "string",
+      "description": "Plain-text or code content of the document"
+    },
+    "file_type": {
+      "type": "string",
+      "description": "File extension, e.g. txt, md, py, csv, json, html"
+    },
+    "confidential": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the document is confidential"
+    },
+    "locked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the document is locked due to a confidentiality breach"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

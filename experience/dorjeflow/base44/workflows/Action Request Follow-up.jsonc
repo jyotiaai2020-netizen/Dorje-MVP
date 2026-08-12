@@ -1,0 +1,44 @@
+{
+  "name": "Action Request Follow-up",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "action_request_followup",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "process_followups": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "processActionRequestFollowups"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Process open action requests",
+            "description": "Send follow-ups to assignees and escalate stale requests"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": 14,
+      "interval_unit": "days",
+      "interval_anchor": "2026-08-12T13:00:00Z",
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Every 14 days, sends a follow-up email to the assignee of each open action request. After 3 follow-ups with no resolution, creates an audit event and alerts the project lead."
+}

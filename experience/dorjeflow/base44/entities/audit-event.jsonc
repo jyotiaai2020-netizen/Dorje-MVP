@@ -1,0 +1,52 @@
+{
+  "name": "AuditEvent",
+  "type": "object",
+  "properties": {
+    "event_type": {
+      "type": "string"
+    },
+    "entity_type": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "action_request_id": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deployment_mode": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "previous_revision": {
+      "type": "integer"
+    },
+    "new_revision": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "event_type",
+    "occurred_at"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

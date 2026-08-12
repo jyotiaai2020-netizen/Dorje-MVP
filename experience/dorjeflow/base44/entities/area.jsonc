@@ -1,0 +1,47 @@
+{
+  "name": "area",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "progress": {
+      "type": "integer",
+      "default": 0
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "color": {
+      "type": "string"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false
+    },
+    "manager_email": {
+      "type": "string",
+      "description": "Email of the area manager, used for stale-task escalations (must be a registered app user)"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "name": "ActionRequest",
+  "type": "object",
+  "properties": {
+    "action_type": {
+      "type": "string"
+    },
+    "target_type": {
+      "type": "string"
+    },
+    "target_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "proposed",
+        "approved",
+        "executing",
+        "verified",
+        "failed",
+        "queued",
+        "conflicted",
+        "cancelled"
+      ],
+      "default": "proposed"
+    },
+    "requires_confirmation": {
+      "type": "boolean",
+      "default": true
+    },
+    "proposal": {
+      "type": "object"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "authoritative_receipt": {
+      "type": "object"
+    },
+    "undo_token": {
+      "type": "string"
+    },
+    "failure_reason": {
+      "type": "string"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "action_type",
+    "status"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "name": "task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "area_id": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "planned",
+        "scheduled",
+        "confirmed",
+        "in_progress",
+        "completed",
+        "skipped",
+        "cancelled"
+      ],
+      "default": "planned"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "fixed",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "due_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "estimated_minutes": {
+      "type": "integer"
+    },
+    "source_type": {
+      "type": "string",
+      "default": "user_entry"
+    },
+    "sync_state": {
+      "type": "string",
+      "enum": [
+        "local",
+        "queued",
+        "synced",
+        "conflicted"
+      ],
+      "default": "local"
+    },
+    "external_id": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer",
+      "default": 1
+    },
+    "verified_completion": {
+      "type": "boolean",
+      "default": false
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_status_change_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the task status last changed; falls back to created_date if never changed"
+    },
+    "stale_notified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the owner was last asked for a status update on a stale task; cleared on status change"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

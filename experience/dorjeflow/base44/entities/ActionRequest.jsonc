@@ -1,0 +1,44 @@
+{
+  "name": "ActionRequest",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Short summary of the requested action"
+    },
+    "description": {
+      "type": "string",
+      "description": "Details of what is being requested"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "assignee_email": {
+      "type": "string",
+      "description": "Email of the user responsible for completing the request (must be a registered app user)"
+    },
+    "project_lead_email": {
+      "type": "string",
+      "description": "Email of the project lead to alert on escalation (must be a registered app user)"
+    },
+    "followup_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of follow-up emails sent so far"
+    },
+    "last_followup_date": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "title",
+    "assignee_email",
+    "project_lead_email"
+  ]
+}

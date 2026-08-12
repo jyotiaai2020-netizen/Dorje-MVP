@@ -1,0 +1,70 @@
+{
+  "name": "Stale Task Status Check",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "stale_task_status_check",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "find_stale": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "findStaleTasks"
+          },
+          "then": "wait_48h",
+          "x-base44": {
+            "title": "Find stale tasks",
+            "description": "Notify owners of tasks with no status change in 7 days"
+          }
+        }
+      },
+      {
+        "wait_48h": {
+          "wait": "PT48H",
+          "then": "escalate",
+          "x-base44": {
+            "title": "Wait 48 hours",
+            "description": "Give owners time to reply with a status update"
+          }
+        }
+      },
+      {
+        "escalate": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "escalateStaleTasks",
+            "args": {
+              "tasks": "${ .find_stale.tasks }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Escalate unreplied tasks",
+            "description": "Escalate tasks with no reply to the area manager"
+          }
+        }
+      }
+    ]
+  },
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 9 * * *",
+      "one_time_date": null,
+      "timezone": "America/New_York",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Daily at 9am ET: finds active tasks with no status change in 7 days, asks the owner for an update, waits 48 hours, and escalates to the area manager if the owner hasn't replied."
+}

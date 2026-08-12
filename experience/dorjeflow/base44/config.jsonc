@@ -1,0 +1,10 @@
+{
+  "name": "Student-LAD by DorjeAI",
+  "description": "Local-first student planning, workspace AI, verified actions, and configurable hybrid/cloud deployment",
+  "site": {
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "serveCommand": "npm run dev",
+    "outputDirectory": "./dist"
+  }
+}

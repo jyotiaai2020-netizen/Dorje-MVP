@@ -1,0 +1,40 @@
+{
+  "name": "AuditEvent",
+  "type": "object",
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "description": "Category of the audit event, e.g. action_request_escalation"
+    },
+    "target_type": {
+      "type": "string",
+      "description": "Entity type the event concerns, e.g. ActionRequest"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "ID of the related record"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable summary of what happened"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "high",
+        "critical"
+      ],
+      "default": "info"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional structured context about the event"
+    }
+  },
+  "required": [
+    "event_type",
+    "description"
+  ]
+}

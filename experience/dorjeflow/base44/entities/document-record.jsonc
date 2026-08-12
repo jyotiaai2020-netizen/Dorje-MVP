@@ -1,0 +1,60 @@
+{
+  "name": "DocumentRecord",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "file_uri": {
+      "type": "string",
+      "format": "uri"
+    },
+    "mime_type": {
+      "type": "string"
+    },
+    "area_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "sensitivity": {
+      "type": "string",
+      "enum": [
+        "public",
+        "private",
+        "restricted"
+      ],
+      "default": "private"
+    },
+    "source_type": {
+      "type": "string"
+    },
+    "verified_source": {
+      "type": "boolean",
+      "default": false
+    },
+    "version": {
+      "type": "integer",
+      "default": 1
+    },
+    "sync_state": {
+      "type": "string",
+      "default": "local"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
