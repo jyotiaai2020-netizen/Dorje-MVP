@@ -4,8 +4,8 @@ import { interpretCommand } from "@/functions/interpretCommand";
 import { createDocument } from "@/functions/createDocument";
 import { editDocument } from "@/functions/editDocument";
 import { sendWorkspaceEmail } from "@/functions/sendWorkspaceEmail";
-import { analyzeAttachment } from "@/functions/analyzeAttachment";
 import { extractDocumentText } from "@/services/workspaceAttachment";
+import { studentLadApi } from "@/services/studentLadApi";
 import OfficeEditor from "@/components/OfficeEditor";
 import CloudBrowser from "@/components/CloudBrowser";
 import {
@@ -171,7 +171,7 @@ export default function WorkspaceAssistant() {
     addMsg("user", `${instruction || "Attached a file"} — ${attachment.name}`);
     setBusy(true);
     try {
-      const res = await analyzeAttachment({
+      const res = await studentLadApi.attachments.analyze({
         filename: attachment.name,
         instruction: prompt,
         text_content: attachment.extractedText,

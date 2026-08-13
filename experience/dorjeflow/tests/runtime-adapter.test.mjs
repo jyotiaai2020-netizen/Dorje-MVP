@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { runtimeProvider, studentLadApi, toDorjeTask } from '../src/services/studentLadApi.js';
 import { extractDocumentText, MAX_DOCUMENT_BYTES } from '../src/services/workspaceAttachment.js';
@@ -41,4 +42,11 @@ test('Student-LAD attachment analysis sends extracted document content to Dorje 
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('attachment analysis has no Base44 upload, LLM, or function dependency', async () => {
+  const workspaceAssistant = await readFile(new URL('../src/components/WorkspaceAssistant.jsx', import.meta.url), 'utf8');
+  const attachmentWorkflow = workspaceAssistant.slice(workspaceAssistant.indexOf('const handleAttach'), workspaceAssistant.indexOf('const send ='));
+  assert.doesNotMatch(attachmentWorkflow, /UploadFile|file_url|integrations\.Core\.InvokeLLM|functions\/analyzeAttachment/);
+  assert.match(attachmentWorkflow, /studentLadApi\.attachments\.analyze/);
 });
