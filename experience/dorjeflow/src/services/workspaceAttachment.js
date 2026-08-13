@@ -2,6 +2,27 @@ export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 export const MAX_EXTRACTED_CHARACTERS = 50_000;
 export const MIN_EXTRACTED_CHARACTERS = 20;
 
+function ensureReadableStreamIteration() {
+  const prototype = globalThis.ReadableStream?.prototype;
+  if (!prototype || typeof prototype.values === 'function') return;
+  Object.defineProperty(prototype, 'values', {
+    configurable: true,
+    value: async function* values({ preventCancel = false } = {}) {
+      const reader = this.getReader();
+      try {
+        while (true) {
+          const result = await reader.read();
+          if (result.done) return;
+          yield result.value;
+        }
+      } finally {
+        if (!preventCancel) await reader.cancel().catch(() => {});
+        reader.releaseLock();
+      }
+    },
+  });
+}
+
 function normalizeExtractedText(text) {
   return String(text || '').replace(/\u0000/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
@@ -27,6 +48,7 @@ function validateExtractedText(text) {
 }
 
 async function extractPdfText(file) {
+  ensureReadableStreamIteration();
   const [pdfjs, workerModule] = await Promise.all([
     import('pdfjs-dist/legacy/build/pdf.mjs'),
     import('pdfjs-dist/legacy/build/pdf.worker.mjs?url'),
