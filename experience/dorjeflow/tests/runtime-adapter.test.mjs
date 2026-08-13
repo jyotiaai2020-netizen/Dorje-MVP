@@ -27,7 +27,9 @@ test('workspace attachments extract supported text locally and enforce size limi
 
 test('Student-LAD attachment analysis sends extracted document content to Dorje chat', async () => {
   const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
   let captured;
+  globalThis.window = { localStorage: { getItem: (key) => key === 'lotus_token' ? 'dorjeflow-access-token' : null } };
   globalThis.fetch = async (url, options) => {
     captured = { url, options };
     return new Response('Grounded document summary', { status: 200, headers: { 'Content-Type': 'text/plain' } });
@@ -39,8 +41,10 @@ test('Student-LAD attachment analysis sends extracted document content to Dorje 
     const body = JSON.parse(captured.options.body);
     assert.equal(body.files[0].name, 'resume.pdf');
     assert.equal(body.files[0].content, 'Project leadership experience');
+    assert.equal(captured.options.headers.Authorization, 'Bearer dorjeflow-access-token');
   } finally {
     globalThis.fetch = originalFetch;
+    globalThis.window = originalWindow;
   }
 });
 
