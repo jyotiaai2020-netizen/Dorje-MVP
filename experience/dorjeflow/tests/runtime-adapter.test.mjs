@@ -50,3 +50,15 @@ test('attachment analysis has no Base44 upload, LLM, or function dependency', as
   assert.doesNotMatch(attachmentWorkflow, /UploadFile|file_url|integrations\.Core\.InvokeLLM|functions\/analyzeAttachment/);
   assert.match(attachmentWorkflow, /studentLadApi\.attachments\.analyze/);
 });
+
+test('Workspace Assistant core document commands have no Base44 dependency', async () => {
+  const workspaceAssistant = await readFile(new URL('../src/components/WorkspaceAssistant.jsx', import.meta.url), 'utf8');
+  const interpreter = await readFile(new URL('../src/functions/interpretCommand.js', import.meta.url), 'utf8');
+  const creator = await readFile(new URL('../src/functions/createDocument.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(`${workspaceAssistant}\n${interpreter}\n${creator}`, /base44|invokeBase44Function|integrations\.Core/);
+  const { interpretCommand } = await import('../src/functions/interpretCommand.js');
+  const result = await interpretCommand({ command: 'Create a Python script to reverse a string' });
+  assert.equal(result.data.action.action, 'create_document');
+  assert.equal(result.data.action.file_type, 'py');
+  assert.match(result.data.action.content, /return value\[::-1\]/);
+});

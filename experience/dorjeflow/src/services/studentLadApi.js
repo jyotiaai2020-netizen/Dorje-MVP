@@ -57,6 +57,17 @@ async function analyzeAttachment({ filename, instruction, text_content, content_
   return { response: text };
 }
 
+async function generateWorkspaceText(message) {
+  const response = await fetch(`${apiRoot}/dorje-ai/chat`, {
+    method: 'POST', credentials: 'include', headers: { Accept: 'text/plain', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, conversation_id: 'dorjeflow-workspace', mode: 'Fast Chat', files: [] }),
+  });
+  const text = await response.text();
+  if (!response.ok) throw new StudentLadApiError(`Workspace AI request failed (${response.status}).`, response.status, text);
+  if (!text.trim()) throw new StudentLadApiError('Workspace AI returned an empty response.', 502, null);
+  return text;
+}
+
 export function toDorjeTask(task) {
   const due = task.dueAt || task.due_at || null;
   const dueDate = due ? new Date(due) : null;
@@ -106,4 +117,5 @@ export const studentLadApi = {
     undo: (undoToken) => request('/kamal/actions/undo', { method: 'POST', body: JSON.stringify({ undo_token: undoToken }) }),
   },
   attachments: { analyze: analyzeAttachment },
+  ai: { generate: generateWorkspaceText },
 };

@@ -1,2 +1,2 @@
-import { invokeBase44Function } from './runtimeFunction';
-export const createDocument = (payload) => invokeBase44Function('createDocument', payload);
+import { localWorkspaceDocuments } from '@/services/localWorkspaceDocuments';
+export const createDocument = async (payload) => ({ data: { document: localWorkspaceDocuments.create(payload) } });

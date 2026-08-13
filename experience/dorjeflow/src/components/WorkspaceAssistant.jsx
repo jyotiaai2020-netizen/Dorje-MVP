@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
 import { interpretCommand } from "@/functions/interpretCommand";
 import { createDocument } from "@/functions/createDocument";
 import { editDocument } from "@/functions/editDocument";
 import { sendWorkspaceEmail } from "@/functions/sendWorkspaceEmail";
 import { extractDocumentText } from "@/services/workspaceAttachment";
 import { studentLadApi } from "@/services/studentLadApi";
+import { localWorkspaceDocuments } from "@/services/localWorkspaceDocuments";
 import OfficeEditor from "@/components/OfficeEditor";
 import CloudBrowser from "@/components/CloudBrowser";
 import {
@@ -64,10 +64,7 @@ export default function WorkspaceAssistant() {
   }, [messages]);
 
   const loadDocs = async () => {
-    try {
-      const docs = await base44.entities.Document.list("-created_date", 50);
-      setDocuments(docs);
-    } catch { /* ignore */ }
+    setDocuments(localWorkspaceDocuments.list());
   };
   useEffect(() => { loadDocs(); }, []);
 
@@ -103,7 +100,7 @@ export default function WorkspaceAssistant() {
           if (!selected) { addMsg("dorje", "Open a document first, then tell me how to edit it."); break; }
           const er = await editDocument({ content: selected.content, edit_prompt: a.edit_prompt || command });
           const newContent = er?.data?.content ?? "";
-          await base44.entities.Document.update(selected.id, { content: newContent });
+          localWorkspaceDocuments.update(selected.id, { content: newContent });
           setSelected({ ...selected, content: newContent });
           setDocuments((ds) => ds.map((d) => (d.id === selected.id ? { ...d, content: newContent } : d)));
           addMsg("dorje", "Updated the document with your changes.");
@@ -211,7 +208,7 @@ export default function WorkspaceAssistant() {
 
   const saveEdits = async () => {
     if (!selected) return;
-    await base44.entities.Document.update(selected.id, { content: selected.content });
+    localWorkspaceDocuments.update(selected.id, { content: selected.content });
     setDocuments((ds) => ds.map((d) => (d.id === selected.id ? { ...d, content: selected.content } : d)));
     addMsg("dorje", `Saved edits to ${selected.name}.`);
   };
@@ -239,8 +236,7 @@ export default function WorkspaceAssistant() {
         `Write a concise, professional email. Recipient: ${emailDraft.to || "the recipient"}. Subject: ${emailDraft.subject || ""}. ` +
         `${emailDraft.attachment_name ? `The email attaches a document named "${emailDraft.attachment_name}". ` : ""}` +
         `Context from the user: """${context}""". Return only the email body text, ready to send.`;
-      const res = await base44.integrations.Core.InvokeLLM({ prompt });
-      const body = typeof res === "string" ? res : res?.data?.response || res?.response || "";
+      const body = await studentLadApi.ai.generate(prompt);
       setEmailDraft((d) => ({ ...d, body: body || d.body }));
       setAiAsk(false);
       setAiHint("");
