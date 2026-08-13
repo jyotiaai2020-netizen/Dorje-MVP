@@ -33,6 +33,41 @@ async function request(path, options = {}) {
   return body;
 }
 
+async function analyzeAttachment({ filename, instruction, text_content, content_type }) {
+  const extractedText = typeof text_content === 'string' ? text_content.trim() : '';
+  if (extractedText.length < 20) throw new StudentLadApiError('At least 20 characters of extracted document text are required.', 422, null);
+  if (extractedText.length > 50_000) throw new StudentLadApiError('Extracted document text must not exceed 50,000 characters.', 413, null);
+  const response = await fetch(`${apiRoot}/dorje-ai/chat`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { Accept: 'text/plain', 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: instruction || 'Summarize this document with key points and suggested next steps.',
+      conversation_id: 'dorjeflow-attachment-review',
+      mode: 'Fast Chat',
+      files: [{ name: filename, type: content_type || 'text/plain', content: extractedText, source_label: 'Locally extracted by DorjeFlow' }],
+    }),
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    let detail = `Request failed (${response.status})`;
+    try { detail = JSON.parse(text)?.detail || detail; } catch { /* plain error body */ }
+    throw new StudentLadApiError(detail, response.status, text);
+  }
+  return { response: text };
+}
+
+async function generateWorkspaceText(message) {
+  const response = await fetch(`${apiRoot}/dorje-ai/chat`, {
+    method: 'POST', credentials: 'include', headers: { Accept: 'text/plain', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, conversation_id: 'dorjeflow-workspace', mode: 'Fast Chat', files: [] }),
+  });
+  const text = await response.text();
+  if (!response.ok) throw new StudentLadApiError(`Workspace AI request failed (${response.status}).`, response.status, text);
+  if (!text.trim()) throw new StudentLadApiError('Workspace AI returned an empty response.', 502, null);
+  return text;
+}
+
 export function toDorjeTask(task) {
   const due = task.dueAt || task.due_at || null;
   const dueDate = due ? new Date(due) : null;
@@ -81,4 +116,6 @@ export const studentLadApi = {
     execute: (action) => request('/kamal/actions/execute', { method: 'POST', body: JSON.stringify({ action }) }),
     undo: (undoToken) => request('/kamal/actions/undo', { method: 'POST', body: JSON.stringify({ undo_token: undoToken }) }),
   },
+  attachments: { analyze: analyzeAttachment },
+  ai: { generate: generateWorkspaceText },
 };
