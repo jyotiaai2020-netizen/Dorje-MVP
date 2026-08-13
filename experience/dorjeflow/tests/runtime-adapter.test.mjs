@@ -48,6 +48,29 @@ test('Student-LAD attachment analysis sends extracted document content to Dorje 
   }
 });
 
+test('Student-LAD attachment analysis refreshes an expired token and retries once', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  const storage = new Map([['lotus_token', 'expired-token']]);
+  const requests = [];
+  globalThis.window = { localStorage: { getItem: (key) => storage.get(key) || null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) } };
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    if (url.endsWith('/auth/refresh')) return new Response(JSON.stringify({ access_token: 'refreshed-token' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (requests.length === 1) return new Response(JSON.stringify({ detail: 'Could not validate credentials' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    return new Response('Recovered summary', { status: 200 });
+  };
+  try {
+    const result = await studentLadApi.attachments.analyze({ filename: 'resume.pdf', instruction: 'Summarize', text_content: 'Enough extracted content for a grounded summary.', content_type: 'application/pdf' });
+    assert.equal(result.response, 'Recovered summary');
+    assert.equal(requests.length, 3);
+    assert.equal(requests[2].options.headers.Authorization, 'Bearer refreshed-token');
+  } finally {
+    globalThis.fetch = originalFetch;
+    globalThis.window = originalWindow;
+  }
+});
+
 test('attachment analysis has no Base44 upload, LLM, or function dependency', async () => {
   const workspaceAssistant = await readFile(new URL('../src/components/WorkspaceAssistant.jsx', import.meta.url), 'utf8');
   const attachmentWorkflow = workspaceAssistant.slice(workspaceAssistant.indexOf('const handleAttach'), workspaceAssistant.indexOf('const send ='));
