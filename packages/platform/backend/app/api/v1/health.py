@@ -11,6 +11,7 @@ from alembic.runtime.migration import MigrationContext
 from app.core.config import settings
 from app.core.database_config import ping_database
 from app.db.session import engine
+from app.services.ollama_client import ollama_client_options
 
 router = APIRouter(tags=["Health"])
 logger = logging.getLogger("lotus.ai")
@@ -20,7 +21,7 @@ def health_llm() -> ChatOllama:
     return ChatOllama(
         model=settings.OLLAMA_CHAT_MODEL,
         reasoning=False,
-        base_url=settings.OLLAMA_BASE_URL,
+        **ollama_client_options(),
         num_predict=5,
         temperature=0,
         keep_alive=settings.OLLAMA_KEEP_ALIVE,

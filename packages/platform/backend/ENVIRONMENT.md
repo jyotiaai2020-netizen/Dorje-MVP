@@ -48,6 +48,7 @@ APP_DEBUG=false
 FRONTEND_URL=https://app.example.com
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 OLLAMA_BASE_URL=https://your-ollama-service.example.com
+OLLAMA_API_KEY=
 OLLAMA_CHAT_MODEL=qwen3:8b
 OLLAMA_FAST_MODEL=qwen3:8b
 OLLAMA_DEEP_MODEL=qwen3:8b
@@ -60,6 +61,23 @@ OLLAMA_DEEP_THINKING=true
 OLLAMA_REPORT_MODEL=qwen3:8b
 OLLAMA_KEEP_ALIVE=15m
 ```
+
+For Ollama Cloud, create an API key in Ollama and store it only in Railway's
+Variables settings. Do not expose it through a `NEXT_PUBLIC_` variable:
+
+```env
+OLLAMA_BASE_URL=https://ollama.com
+OLLAMA_API_KEY=your-server-side-ollama-api-key
+OLLAMA_CHAT_MODEL=qwen3.5:cloud
+OLLAMA_FAST_MODEL=qwen3.5:cloud
+OLLAMA_DEEP_MODEL=qwen3.5:cloud
+OLLAMA_REASONING_MODEL=qwen3.5:cloud
+OLLAMA_REPORT_MODEL=qwen3.5:cloud
+```
+
+For a separate Ollama service in the same Railway project, leave
+`OLLAMA_API_KEY` empty and use its private DNS address, for example
+`OLLAMA_BASE_URL=http://ollama.railway.internal:11434`.
 
 Set the frontend deployment variable separately:
 

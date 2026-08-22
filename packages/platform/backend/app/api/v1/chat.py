@@ -12,6 +12,7 @@ from app.services.dorje_ai_service import chunk_text
 from app.models.user import User
 from app.services.ceda_service import ceda_service
 from app.services.context_os_service import context_os_service
+from app.services.ollama_client import ollama_client_options
 
 router = APIRouter(
     prefix="/chat",
@@ -120,7 +121,7 @@ COMMON_REPLIES = {
 llm = ChatOllama(
     model=settings.OLLAMA_CHAT_MODEL,
     reasoning=False,
-    base_url=settings.OLLAMA_BASE_URL,
+    **ollama_client_options(),
     temperature=0.3,
     num_predict=300,
     keep_alive=settings.OLLAMA_KEEP_ALIVE,

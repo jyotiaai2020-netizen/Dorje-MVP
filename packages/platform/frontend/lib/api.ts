@@ -2,12 +2,20 @@ import { TOKEN_KEY, logout, setAuthSession } from '@/lib/auth';
 
 const browserHostname = typeof window === 'undefined' ? 'localhost' : window.location.hostname;
 const defaultBackendPort = '8100';
+const isLoopbackHost = ['localhost', '127.0.0.1', '::1'].includes(browserHostname);
+const defaultApiBaseUrl = isLoopbackHost
+  ? `http://${browserHostname}:${defaultBackendPort}`
+  : '/api/backend';
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ??
-  `http://${browserHostname}:${defaultBackendPort}`;
+  defaultApiBaseUrl;
 
 let refreshPromise: Promise<string | null> | null = null;
+
+function isPublicWorkspaceRoute(): boolean {
+  return typeof window !== 'undefined' && window.location.pathname.startsWith('/dorje-ai');
+}
 
 type AuthenticatedFetchInit = RequestInit & {
   skipAuthRedirect?: boolean;
@@ -60,7 +68,7 @@ export async function authenticatedFetch(
   const refreshedToken = await refreshAccessToken();
   if (!refreshedToken) {
     logout();
-    if (!['/login', '/register'].includes(window.location.pathname)) {
+    if (!isPublicWorkspaceRoute() && !['/login', '/register'].includes(window.location.pathname)) {
       window.location.assign('/login');
     }
     return response;
