@@ -23,9 +23,11 @@ test('extracts PDF text locally without an upload request', async ({ page }) => 
     const document = new jsPDF();
     document.text('Jyoti led cross-functional delivery and product operations.', 20, 20);
     const file = new File([document.output('arraybuffer')], 'resume.pdf', { type: 'application/pdf' });
-    return extractDocumentText(file);
+    const result = await extractDocumentText(file);
+    return { result, valuesType: typeof globalThis.ReadableStream?.prototype.values };
   });
-  expect(extracted.text).toContain('cross-functional delivery');
+  expect(extracted.result.text).toContain('cross-functional delivery');
+  expect(extracted.valuesType).toBe('function');
   expect(requests).toEqual([]);
 });
 

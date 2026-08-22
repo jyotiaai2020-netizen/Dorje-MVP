@@ -27,7 +27,9 @@ test('workspace attachments extract supported text locally and enforce size limi
 
 test('Student-LAD attachment analysis sends extracted document content to Dorje chat', async () => {
   const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
   let captured;
+  globalThis.window = { localStorage: { getItem: (key) => key === 'lotus_token' ? 'dorjeflow-access-token' : null } };
   globalThis.fetch = async (url, options) => {
     captured = { url, options };
     return new Response('Grounded document summary', { status: 200, headers: { 'Content-Type': 'text/plain' } });
@@ -39,8 +41,33 @@ test('Student-LAD attachment analysis sends extracted document content to Dorje 
     const body = JSON.parse(captured.options.body);
     assert.equal(body.files[0].name, 'resume.pdf');
     assert.equal(body.files[0].content, 'Project leadership experience');
+    assert.equal(captured.options.headers.Authorization, 'Bearer dorjeflow-access-token');
   } finally {
     globalThis.fetch = originalFetch;
+    globalThis.window = originalWindow;
+  }
+});
+
+test('Student-LAD attachment analysis refreshes an expired token and retries once', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  const storage = new Map([['lotus_token', 'expired-token']]);
+  const requests = [];
+  globalThis.window = { localStorage: { getItem: (key) => storage.get(key) || null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) } };
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    if (url.endsWith('/auth/refresh')) return new Response(JSON.stringify({ access_token: 'refreshed-token' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (requests.length === 1) return new Response(JSON.stringify({ detail: 'Could not validate credentials' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    return new Response('Recovered summary', { status: 200 });
+  };
+  try {
+    const result = await studentLadApi.attachments.analyze({ filename: 'resume.pdf', instruction: 'Summarize', text_content: 'Enough extracted content for a grounded summary.', content_type: 'application/pdf' });
+    assert.equal(result.response, 'Recovered summary');
+    assert.equal(requests.length, 3);
+    assert.equal(requests[2].options.headers.Authorization, 'Bearer refreshed-token');
+  } finally {
+    globalThis.fetch = originalFetch;
+    globalThis.window = originalWindow;
   }
 });
 
