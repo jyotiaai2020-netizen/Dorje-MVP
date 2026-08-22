@@ -3,6 +3,7 @@ import json
 from langchain_ollama import ChatOllama
 
 from app.core.config import settings
+from app.services.ollama_client import ollama_client_options
 from app.schemas.dorje_ai_connectors import (
     EmailDraftRequest,
     MediaDraftRequest,
@@ -14,7 +15,7 @@ class DorjeAIConnectorService:
     def __init__(self) -> None:
         self.llm = ChatOllama(
             model=settings.OLLAMA_CHAT_MODEL,
-            base_url=settings.OLLAMA_BASE_URL,
+            **ollama_client_options(),
             reasoning=False,
             temperature=0.3,
             num_predict=700,

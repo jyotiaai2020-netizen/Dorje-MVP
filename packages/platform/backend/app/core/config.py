@@ -55,6 +55,7 @@ class Settings(BaseSettings):
 
     FRONTEND_URL: str = "http://127.0.0.1:3100"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_API_KEY: str = ""
     OLLAMA_MODEL: str = "qwen3:8b"
     OLLAMA_CHAT_MODEL: str = "qwen3:8b"
     OLLAMA_FAST_MODEL: str = "qwen3:8b"

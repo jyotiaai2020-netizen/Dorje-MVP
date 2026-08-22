@@ -11,6 +11,7 @@ from app.core.security import get_current_user
 from app.db.session import get_db
 from app.models.report import Report
 from app.models.user import User
+from app.services.ollama_client import ollama_client_options
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -66,7 +67,7 @@ def generate_report(
 
     llm = ChatOllama(
         model=settings.OLLAMA_REPORT_MODEL,
-        base_url=settings.OLLAMA_BASE_URL,
+        **ollama_client_options(),
         temperature=0.4,
         num_predict=1200,
         keep_alive=settings.OLLAMA_KEEP_ALIVE,

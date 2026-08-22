@@ -15,6 +15,7 @@ from app.orchestration.router import IntentRouter
 from app.orchestration.validator import ResponseValidator
 from app.schemas.dorje_ai import ChatMessage, StructuredTable, UploadedFileReference
 from app.orchestration.utils import chunk_text
+from app.services.ollama_client import ollama_client_options
 
 logger = logging.getLogger("lotus.ai.orchestrator")
 
@@ -40,7 +41,7 @@ anything relevant to the requested task. Do not write a final report. Do not inv
 
 class DorjeOrchestrator:
     def __init__(self) -> None:
-        base = {"base_url": settings.OLLAMA_BASE_URL}
+        base = ollama_client_options()
         lazy_keep_alive = f"{settings.MODEL_IDLE_TIMEOUT_SECONDS}s"
         self.planner = ChatOllama(model=settings.OLLAMA_REASONING_MODEL, reasoning=True, temperature=0.1, num_predict=settings.OLLAMA_REASONING_NUM_PREDICT, keep_alive=settings.OLLAMA_KEEP_ALIVE, **base)
         self.content = ChatOllama(model=settings.OLLAMA_FAST_MODEL or settings.OLLAMA_CHAT_MODEL, reasoning=settings.OLLAMA_FAST_THINKING, temperature=0.3, num_ctx=settings.OLLAMA_FAST_NUM_CTX, num_predict=settings.OLLAMA_FAST_NUM_PREDICT, keep_alive=lazy_keep_alive, **base)
