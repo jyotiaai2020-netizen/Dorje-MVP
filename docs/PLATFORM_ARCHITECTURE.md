@@ -99,12 +99,6 @@ explicitly saves it. **CTX-005**
 
 CEDA maintains independently governed domains:
 
-- **Academic:** courses, assignments, research, notes, grades, study habits.
-- **Immigration:** passport, visa, I-20, SEVIS, CPT, OPT, STEM OPT, EAD, USCIS.
-- **Career:** resumes, recruiters, networking, interviews, skills, portfolio.
-- **Personal productivity:** goals, projects, calendar, tasks, habits.
-- **Social:** LinkedIn, Medium, Instagram, Facebook, WhatsApp, Reddit.
-- **Lotus & Dorje:** consulting, research, BI-CASA, CEDA, MVME, books, projects.
 
 Cross-domain use is denied unless the applicable policy explicitly permits it.
 
@@ -176,16 +170,9 @@ and career goals. Complex work becomes staged preparation, research, drafting, r
 and submission suggestions. Creation or external calendar synchronization follows the
 applicable confirmation policy.
 
-## 2.16 Immigration Timeline Engine
+## 2.16 Timeline Engine
 
-This specialized CEDA module extracts only approved structured metadata and applies
-versioned, configurable rule packs informed by official guidance. It tracks passport,
-visa, I-20, SEVIS, CPT, OPT, STEM OPT, EAD, and USCIS milestones with source,
-confidence, and verification status. Regulations and processing times are never
-hard-coded as timeless facts. **IMM-001**
 
-Every output states that it is informational, not legal advice, and must be verified
-with the DSO, university, USCIS, or a qualified immigration attorney.
 
 ## 2.16.1 Decision Support Layer
 
