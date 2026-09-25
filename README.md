@@ -64,3 +64,4 @@ Run `npm run mvp:check`. For the full inherited Student-LAD verification suite, 
 - DorjeFlow experience snapshot: Base44 app `6a7b7d9a84dfb3f3151acf4d`.
 
 The older `imports/` prototype and nonessential demo videos/favicon were intentionally not copied. This keeps the MVP source-focused and avoids carrying a second obsolete experience implementation.
+<img width="1375" height="824" alt="image" src="https://github.com/user-attachments/assets/57a2d000-10a5-4e08-b91b-2355182dcbf6" />
